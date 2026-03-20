@@ -1,0 +1,41 @@
+# ======================
+# DATA (ignore ALL datasets)
+# ======================
+kaggle_projects/**/train_audio/
+kaggle_projects/**/train_soundscapes/
+kaggle_projects/**/test_soundscapes/
+
+*.csv
+*.wav
+*.mp3
+*.zip
+*.parquet
+
+# ======================
+# PYTHON
+# ======================
+__pycache__/
+*.pyc
+
+# ======================
+# JUPYTER
+# ======================
+.ipynb_checkpoints/
+
+# ======================
+# ENV / SECRETS
+# ======================
+.env
+venv/
+.venv/
+
+# ======================
+# SYSTEM
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# VS CODE (optional)
+# ======================
+.vscode/
