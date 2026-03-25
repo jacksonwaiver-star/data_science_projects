@@ -9,6 +9,7 @@ from typing import Any
 import networkx as nx
 import pandas as pd
 import requests
+from pandas.errors import EmptyDataError
 
 
 BASE_URL = "https://api.helldivers2.dev/api"
@@ -20,7 +21,13 @@ DEFAULT_CONTACT = "replace-with-email@example.com"
 
 def load_history() -> pd.DataFrame:
     if HISTORY_FILE.exists():
-        return pd.read_csv(HISTORY_FILE, parse_dates=["timestamp"])
+        # Bootstrap-safe: an empty file should behave like "no history yet".
+        if HISTORY_FILE.stat().st_size == 0:
+            return pd.DataFrame()
+        try:
+            return pd.read_csv(HISTORY_FILE, parse_dates=["timestamp"])
+        except EmptyDataError:
+            return pd.DataFrame()
     return pd.DataFrame()
 
 
