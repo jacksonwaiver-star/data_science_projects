@@ -1,8 +1,10 @@
 import logging
 import os
+import re
 import time
 from collections import deque
 from datetime import datetime
+import json
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,7 @@ from pandas.errors import EmptyDataError
 
 BASE_URL = "https://api.helldivers2.dev/api"
 HISTORY_FILE = Path(__file__).resolve().parent / "planet_history.csv"
+NOTEBOOK_FILE = Path(__file__).resolve().parent / "data_collection.ipynb"
 
 DEFAULT_CLIENT = "helldivers-machine_learning-project"
 DEFAULT_CONTACT = "replace-with-email@example.com"
@@ -203,12 +206,68 @@ def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) ->
     return indexes
 
 
+def load_manual_edges_from_notebook() -> list[tuple[str, str]]:
+    if not NOTEBOOK_FILE.exists():
+        logging.warning("Notebook not found for manual graph edges: %s", NOTEBOOK_FILE)
+        return []
+
+    try:
+        notebook = json.loads(NOTEBOOK_FILE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        logging.warning("Unable to parse notebook for manual graph edges: %s", exc)
+        return []
+
+    pattern = re.compile(
+        r'add_edge_by_name\(G,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*name_to_index\)'
+    )
+    edges: list[tuple[str, str]] = []
+
+    for cell in notebook.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        for line in cell.get("source", []):
+            match = pattern.search(line)
+            if match:
+                edges.append((match.group(1), match.group(2)))
+
+    if edges:
+        logging.info("Loaded %s manual edges from notebook", len(edges))
+    else:
+        logging.warning("No manual edges found in notebook add_edge_by_name calls")
+
+    return edges
+
+
 def build_graph(planets: list[dict[str, Any]], owner_by_index: dict[int, str]) -> nx.Graph:
     graph = nx.Graph()
     for planet in planets:
         planet_index = planet["index"]
         graph.add_node(planet_index, name=planet.get("name"), owner=planet.get("currentOwner"))
 
+    name_to_index = {
+        planet.get("name"): planet["index"]
+        for planet in planets
+        if planet.get("name")
+    }
+
+    manual_edges = load_manual_edges_from_notebook()
+    if manual_edges:
+        skipped_edges = 0
+        for source_name, dest_name in manual_edges:
+            src = name_to_index.get(source_name)
+            dst = name_to_index.get(dest_name)
+            if src is None or dst is None:
+                skipped_edges += 1
+                continue
+            graph.add_edge(src, dst)
+        logging.info(
+            "Applied manual graph edges: %s added, %s skipped",
+            graph.number_of_edges(),
+            skipped_edges,
+        )
+        return graph
+
+    logging.warning("Falling back to API waypoints for graph construction")
     for planet in planets:
         src = planet["index"]
         for dst in planet.get("waypoints", []):
