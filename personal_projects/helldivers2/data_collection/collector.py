@@ -19,16 +19,34 @@ DEFAULT_CLIENT = "helldivers-machine_learning-project"
 DEFAULT_CONTACT = "replace-with-email@example.com"
 
 
+
 def load_history() -> pd.DataFrame:
-    if HISTORY_FILE.exists():
-        # Bootstrap-safe: an empty file should behave like "no history yet".
-        if HISTORY_FILE.stat().st_size == 0:
-            return pd.DataFrame()
-        try:
-            return pd.read_csv(HISTORY_FILE, parse_dates=["timestamp"])
-        except EmptyDataError:
-            return pd.DataFrame()
-    return pd.DataFrame()
+    if not HISTORY_FILE.exists():
+        # create file with schema
+        df = pd.DataFrame(columns=["timestamp"])
+        df.to_csv(HISTORY_FILE, index=False)
+        return df
+
+    if HISTORY_FILE.stat().st_size == 0:
+        return pd.DataFrame(columns=["timestamp"])
+
+    try:
+        df = pd.read_csv(HISTORY_FILE)
+
+        # ensure timestamp column exists
+        if "timestamp" not in df.columns:
+            df["timestamp"] = pd.NaT
+        else:
+            df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+
+        return df
+
+    except EmptyDataError:
+        return pd.DataFrame(columns=["timestamp"])
+
+    except Exception as e:
+        print(f"[load_history ERROR] {e}")
+        return pd.DataFrame(columns=["timestamp"])
 
 
 def save_history(df: pd.DataFrame) -> None:
