@@ -6,6 +6,7 @@ kaggle_projects/**/train_soundscapes/
 kaggle_projects/**/test_soundscapes/
 
 *.csv
+!personal_projects/helldivers2/data_collection/planet_history.csv
 *.wav
 *.mp3
 *.zip
