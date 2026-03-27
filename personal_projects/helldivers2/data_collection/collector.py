@@ -1,10 +1,8 @@
 import logging
 import os
-import re
 import time
 from collections import deque
 from datetime import datetime
-import json
 from pathlib import Path
 from typing import Any
 
@@ -16,10 +14,700 @@ from pandas.errors import EmptyDataError
 
 BASE_URL = "https://api.helldivers2.dev/api"
 HISTORY_FILE = Path(__file__).resolve().parent / "planet_history.csv"
-NOTEBOOK_FILE = Path(__file__).resolve().parent / "data_collection.ipynb"
 
 DEFAULT_CLIENT = "helldivers-machine_learning-project"
 DEFAULT_CONTACT = "replace-with-email@example.com"
+
+
+def apply_manual_edges(G: nx.Graph, name_to_index: dict[str, int]) -> int:
+    skipped_edges = 0
+
+    def add_edge_by_name(G: nx.Graph, name_a: str, name_b: str, name_to_index: dict[str, int]) -> None:
+        nonlocal skipped_edges
+        a = name_to_index.get(name_a)
+        b = name_to_index.get(name_b)
+        if a is None or b is None:
+            skipped_edges += 1
+            return
+        G.add_edge(a, b)
+
+    #already made edge from ESTANU TO CRIMSICA
+    #DON'T CONNECT ABOVE PHACT BAY UP OR UPPER RIGHT OR UPPER LEFT WHEN ITS MENTIONED IN COMMENTS, WHEN MENTIONED IN COMMENT THAT IS CALLED THE HUB
+
+    #WE ARE IN TERMINID TERRITORY ON MIDDLE RIGHT
+
+    #now make rest of edges
+    add_edge_by_name(G, "ESTANU", "CRIMSICA", name_to_index)
+
+    #CONNECT EVERYTHING TO CRUCIBLE
+    add_edge_by_name(G, "CRUCIBLE", "VOLTERRA", name_to_index)
+    add_edge_by_name(G, "CRUCIBLE", "KRAKATWO", name_to_index)
+
+    #CONNECT EVERYTHING TO KRAKATWO
+    add_edge_by_name(G, "KRAKATWO", "SLIF", name_to_index)
+    add_edge_by_name(G, "KRAKATWO", "NUBLARIA I", name_to_index)
+
+    #CONNECT EVERYTHING TO SLIF
+    add_edge_by_name(G,"SLIF", "VELD", name_to_index)
+
+    #CONNECT EVERYTHING TO NUBLARIA I
+    add_edge_by_name(G, "NUBLARIA I","SULFURA", name_to_index)
+    add_edge_by_name(G, "NUBLARIA I","FORT UNION", name_to_index)
+
+    #CONNECT EVERYTHING TO SULFURA
+    add_edge_by_name(G,"SULFURA", "AZTERRA", name_to_index)
+
+    #CONNECT EVERYTHING TO AZTERRA
+    add_edge_by_name(G, "AZTERRA", "TERREK", name_to_index)
+    add_edge_by_name(G, "AZTERRA", "CIRRUS", name_to_index)
+
+    #CONNECT EVERYTHING TO FORT UNION
+    add_edge_by_name(G, "FORT UNION", "CIRRUS", name_to_index)
+
+    #CONNECT EVERYTHING TO CIRRUS
+    add_edge_by_name(G, "CIRRUS", "TERREK", name_to_index)
+    add_edge_by_name(G, "CIRRUS", "HEETH", name_to_index)
+
+    #CONNECT EVERYTHING TO TERREK
+    add_edge_by_name(G,"TERREK", "BORE ROCK", name_to_index)
+
+    #CONNECT EVERYTHING TO VOLTERRA
+    add_edge_by_name(G, "VOLTERRA", "CARAMOOR", name_to_index)
+    add_edge_by_name(G, "VOLTERRA", "SLIF", name_to_index)
+    add_edge_by_name(G, "VOLTERRA", "ALTA V", name_to_index)
+
+    #CONNECT EVERYTHING TO HEETH
+    add_edge_by_name(G, "HEETH", "FENRIR III", name_to_index)
+    add_edge_by_name(G, "HEETH", "ERATA PRIME", name_to_index)
+
+    #CONNECT EVERYTHING TO ERATA PRIME
+    add_edge_by_name(G, "ERATA PRIME", "BORE ROCK", name_to_index)
+    add_edge_by_name(G, "ERATA PRIME", "NIVEL 43", name_to_index)
+
+    #CONNECT EVERYTHING TO ALTA V
+    add_edge_by_name(G, "ALTA V", "INARI", name_to_index)
+    add_edge_by_name(G, "ALTA V", "CARAMOOR", name_to_index)
+    add_edge_by_name(G, "ALTA V", "SLIF", name_to_index)
+
+    #CONNECT EVERYTHING TO INARI
+    add_edge_by_name(G, "INARI", "VELD", name_to_index)
+    add_edge_by_name(G, "INARI", "URSICA XI", name_to_index)
+
+    #CONNECT EVERYTHING TO URSICA XI
+    add_edge_by_name(G, "URSICA XI", "ACHIRD III", name_to_index)
+    add_edge_by_name(G, "URSICA XI", "ACHERNAR SECUNDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO ACHERNAR SECUNDUS 
+    add_edge_by_name(G, "ACHERNAR SECUNDUS", "GAR HAREN", name_to_index)
+    add_edge_by_name(G,"ACHERNAR SECUNDUS", "DARIUS II", name_to_index)
+
+    #CONNECT EVERYTHING TO GAR HAREN
+    add_edge_by_name(G, "GAR HAREN", "GRAND ERRANT", name_to_index)
+    add_edge_by_name(G, "GAR HAREN", "GATRIA", name_to_index)
+    add_edge_by_name(G, "GAR HAREN", "PHACT BAY", name_to_index)
+
+    #CONNECT EVERYTHING TO GRAND ERRANT
+    add_edge_by_name(G, "GRAND ERRANT", "POLARIS PRIME", name_to_index)
+    add_edge_by_name(G, "GRAND ERRANT", "PHERKAD SECUNDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO POLARIS PRIME
+    add_edge_by_name(G,"POLARIS PRIME", "PHERKAD SECUNDUS", name_to_index)
+    add_edge_by_name(G,"POLARIS PRIME", "POLLUX 31", name_to_index)
+
+    #CONNECT EVERYTHING TO POLLUX 31
+    add_edge_by_name(G, "POLLUX 31", "PRASA", name_to_index)
+
+    #CONNECT EVERYTHING TO GATRIA 
+    add_edge_by_name(G, "GATRIA", "TRANDOR", name_to_index)
+    add_edge_by_name(G, "GATRIA", "PHACT BAY", name_to_index)
+    add_edge_by_name(G, "GATRIA", "PHERKAD SECUNDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO TRANDOR
+    add_edge_by_name(G, "TRANDOR", "PEACOCK", name_to_index)
+
+    #CONNECT EVERYTHING TO PEACOCK
+    add_edge_by_name(G, "PEACOCK", "PARTION", name_to_index)
+
+    #CONNECT EVERYTHING TO PHACT BAY
+    add_edge_by_name(G, "PHACT BAY", "GATRIA", name_to_index)
+    add_edge_by_name(G, "PHACT BAY", "GAR HAREN", name_to_index)
+    add_edge_by_name(G, "PHACT BAY", "DARIUS II", name_to_index)
+    add_edge_by_name(G, "PHACT BAY", "PANDION-XXIV", name_to_index)
+    add_edge_by_name(G, "PHACT BAY", "PARTION", name_to_index)
+
+    #CONNECT EVERYTHING TO ACHIRD III
+    add_edge_by_name(G, "ACHIRD III","URSICA XI", name_to_index)
+    add_edge_by_name(G, "ACHIRD III","DARIUS II", name_to_index)
+    #JUST ADDED BELOW
+    add_edge_by_name(G, "ACHIRD III","TURING", name_to_index)
+
+    #CONNECT EVERYTHING TO TURING
+    add_edge_by_name(G, "TURING", "VELD", name_to_index)
+    add_edge_by_name(G, "TURING", "ACAMAR IV", name_to_index)
+
+
+    #DO ABOVE PANDION AND INCLUDE PANDION
+
+    #CONNECT EVERYTHING TO PANDION-XXIV
+    add_edge_by_name(G, "PANDION-XXIV", "PHACT BAY", name_to_index)
+    add_edge_by_name(G, "PANDION-XXIV", "GACRUX", name_to_index)
+    add_edge_by_name(G, "PANDION-XXIV", "ACAMAR IV", name_to_index)
+
+    #CONNECT EVERYTHING TO PARTION
+    add_edge_by_name(G, "PARTION", "PHACT BAY", name_to_index)
+    add_edge_by_name(G, "PARTION", "PEACOCK", name_to_index)
+    add_edge_by_name(G, "PARTION", "GACRUX", name_to_index)
+    add_edge_by_name(G, "PARTION", "OVERGOE PRIME", name_to_index)
+
+    #CONNECT EVERYTHING TO ACAMAR IV
+    add_edge_by_name(G, "ACAMAR IV", "DARIUS II", name_to_index)
+    add_edge_by_name(G, "ACAMAR IV", "PANDION-XXIV", name_to_index)
+    add_edge_by_name(G, "ACAMAR IV", "TURING", name_to_index)
+    add_edge_by_name(G, "ACAMAR IV", "CRIMSICA", name_to_index)
+    add_edge_by_name(G, "ACAMAR IV", "GACRUX", name_to_index)
+
+    #CONNECT EVERYTHING TO OVERGOE PRIME
+    add_edge_by_name(G, "OVERGOE PRIME", "AZUR SECUNDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO CRIMSICA
+    add_edge_by_name(G, "CRIMSICA", "FORI PRIME", name_to_index)
+    add_edge_by_name(G, "CRIMSICA", "ESTANU", name_to_index)
+
+    #CONNECT EVERYTHING TO ESTANU
+    add_edge_by_name(G, "ESTANU", "FORI PRIME", name_to_index)
+    add_edge_by_name(G, "ESTANU", "HELLMIRE", name_to_index)
+
+    #CONNECT EVERYTHING TO FORI PRIME
+    add_edge_by_name(G, "FORI PRIME", "GACRUX", name_to_index)
+    add_edge_by_name(G, "FORI PRIME", "OSHAUNE", name_to_index)
+
+    #CONNECT EVERYTHING TO NAVI VII
+    add_edge_by_name(G, "NAVI VII", "NABATEA SECUNDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO OSHAUNE
+    add_edge_by_name(G, "OSHAUNE", "HELLMIRE", name_to_index)
+    add_edge_by_name(G, "OSHAUNE", "OMICRON", name_to_index)
+
+    #CONNECT EVERYTHING TO HELLMIRE
+    add_edge_by_name(G, "HELLMIRE", "ERATA PRIME", name_to_index)
+    add_edge_by_name(G, "HELLMIRE", "FENRIR III", name_to_index)
+    add_edge_by_name(G, "HELLMIRE", "NIVEL 43", name_to_index)
+    add_edge_by_name(G, "HELLMIRE", "OSHAUNE", name_to_index)
+
+    #CONNECT EVERYTHING TO NIVEL 43
+    add_edge_by_name(G, "NIVEL 43", "HELLMIRE", name_to_index)
+    add_edge_by_name(G, "NIVEL 43", "ERATA PRIME", name_to_index)
+    add_edge_by_name(G, "NIVEL 43", "ZAGON PRIME", name_to_index)
+    add_edge_by_name(G, "NIVEL 43", "ERSON SANDS", name_to_index)
+    add_edge_by_name(G, "NIVEL 43", "ESKER", name_to_index)
+
+    #CONNECT EVERYTHING TO ZAGON PRIME
+    add_edge_by_name(G, "ZAGON PRIME", "OMICRON", name_to_index)
+
+
+    #CONNECT EVERYTHING TO OMICRON
+    add_edge_by_name(G, "OMICRON", "OSHAUNE", name_to_index)
+
+    #CONNECT EVERYTHING TO NABATEA SECUNDUS
+    add_edge_by_name(G, "NABATEA SECUNDUS", "GEMSTONE BLUFFS", name_to_index)
+
+    #CONNECT EVERYTHING TO GEMSTONE BLUFFS
+    add_edge_by_name(G, "GEMSTONE BLUFFS", "EPSILON PHOENCIS VI", name_to_index)
+    add_edge_by_name(G, "GEMSTONE BLUFFS", "DIASPORA X", name_to_index)
+
+    #CONNECT EVERYTHING TO ENULIAE
+    add_edge_by_name(G, "ENULIALE", "DIASPORA X", name_to_index)
+    add_edge_by_name(G, "ENULIALE", "EPSILON PHOENCIS VI", name_to_index)
+
+    #CONNECT EVERYTHING TO ERSON SANDS
+    add_edge_by_name(G, "ERSON SANDS", "ESKER", name_to_index)
+    add_edge_by_name(G, "ERSON SANDS", "SOCORRO III", name_to_index)
+
+    #CONNECT EVERYTHING TO ESKER
+    add_edge_by_name(G,"ESKER","BORE ROCK", name_to_index)
+
+
+
+    #START AT SHALLUS FOR AUTOMATONS AT TOP MIDDLE 
+
+
+    #CONNECT EVERYTHING TO SHALLUS
+    add_edge_by_name(G, "SHALLUS", "SHELT", name_to_index)
+    add_edge_by_name(G, "SHALLUS", "MASTIA", name_to_index)
+
+    #CONNECT EVERYTHING TO SHELT
+    add_edge_by_name(G, "SHELT", "MASTIA", name_to_index)
+    add_edge_by_name(G, "SHELT", "IMBER", name_to_index)
+
+    #CONNECT EVERYTHING TO IMBER
+    add_edge_by_name(G, "IMBER", "GAELLIVARE", name_to_index)
+    add_edge_by_name(G, "IMBER", "CLAORELL", name_to_index)
+
+    #CONNECT EVERYTHING TO CLAORELL
+    add_edge_by_name(G, "CLAORELL", "VOG-SOJOTH", name_to_index)
+    add_edge_by_name(G, "CLAORELL", "CLASA", name_to_index)
+
+    #CONNECT EVERYTHING TO CLASA
+    add_edge_by_name(G, "CLASA", "DEMIURG", name_to_index)
+    add_edge_by_name(G, "CLASA", "ZEFIA", name_to_index)
+    add_edge_by_name(G, "CLASA", "YED PRIOR", name_to_index)
+
+    #CONNECT EVERYTHING TO ZEFIA
+    add_edge_by_name(G, "ZEFIA", "MINTORIA", name_to_index)
+    add_edge_by_name(G, "ZEFIA", "YED PRIOR", name_to_index)
+
+    #CONNECT EVERYTHING TO YED PRIOR
+    add_edge_by_name(G, "YED PRIOR", "BLISTICA", name_to_index)
+
+    #CONNECT EVERYTHING TO BLISTICA
+    add_edge_by_name(G,"BLISTICA", "MINTORIA", name_to_index)
+    add_edge_by_name(G,"BLISTICA", "ZZANIAH PRIME", name_to_index)
+
+    #CONNECT EVERYTHING TO ZZANIAH PRIME
+    add_edge_by_name(G, "ZZANIAH PRIME", "ZOSMA", name_to_index)
+
+
+    #CONNECT EVERYTHING TO MASTIA
+    add_edge_by_name(G, "MASTIA", "GAELLIVARE", name_to_index)
+    add_edge_by_name(G, "MASTIA", "FENMIRE", name_to_index)
+    add_edge_by_name(G, "MASTIA", "TARSH", name_to_index)
+
+    #CONNECT EVERYTHING TO GAELLIVARE
+    add_edge_by_name(G, "GAELLIVARE", "LESATH", name_to_index)
+
+    #CONNECT EVERYTHING TO LESATH
+    add_edge_by_name(G, "LESATH", "VERNEN WELLS", name_to_index)
+    add_edge_by_name(G, "LESATH", "MENKENT", name_to_index)
+    add_edge_by_name(G, "LESATH", "CHORT BAY", name_to_index)
+    add_edge_by_name(G, "LESATH", "PENTA", name_to_index)
+    add_edge_by_name(G, "LESATH", "VOG-SOJOTH", name_to_index)
+
+    #CONNECT EVERYTHING TO PENTA
+
+    #COMMENTED OUT BECAUSE DARK FLUID BEAM VIA DSS DESTROYED PENTA
+
+    # add_edge_by_name(G, "PENTA", "CHORT BAY", name_to_index)
+    # add_edge_by_name(G, "PENTA", "MERAK", name_to_index)
+
+    #CONNECT EVERYTHING TO CHORT BAY
+    add_edge_by_name(G,"CHORT BAY", "MENKENT",  name_to_index)
+    add_edge_by_name(G,"CHORT BAY", "CHOOHE",  name_to_index)
+
+    #CONNECT EVERYTHING TO CHOOHE
+    add_edge_by_name(G,"CHOOHE", "MENKENT",  name_to_index)
+    add_edge_by_name(G,"CHOOHE", "AURORA BAY",  name_to_index)
+
+    #CONNECT EVERYTHING TO MENKENT
+    add_edge_by_name(G,"MENKENT", "VERNEN WELLS",  name_to_index)
+
+    #CONNECT EVERYTHING TO VERNEN WELLS
+    add_edge_by_name(G,"VERNEN WELLS", "TARSH",  name_to_index)
+    add_edge_by_name(G,"VERNEN WELLS", "AESIR PASS",  name_to_index)
+
+    #CONNECT EVERYTHING TO TARSH
+    add_edge_by_name(G,"TARSH", "MASTIA",  name_to_index)
+    add_edge_by_name(G,"TARSH", "CURIA",  name_to_index)
+
+    #CONNECT EVERYTHING TO CURIA
+    add_edge_by_name(G,"CURIA", "FENMIRE",  name_to_index)
+    add_edge_by_name(G,"CURIA", "BOREA",  name_to_index)
+    add_edge_by_name(G,"CURIA", "AESIR PASS",  name_to_index)
+
+    #CONNECT EVERYTHING TO FENMIRE
+    add_edge_by_name(G,"FENMIRE", "BARABOS",  name_to_index)
+
+    #CONNECT EVERYTHING TO BARABOS
+    add_edge_by_name(G,"BARABOS", "EMERIA",  name_to_index)
+
+    #CONNECT EVERYTHING TO EMERIA
+    add_edge_by_name(G,"EMERIA", "BOREA",  name_to_index)
+
+    #CONNECT EVERYTHING TO AESIR PASS
+    add_edge_by_name(G,"AESIR PASS", "MARFARK",  name_to_index)
+
+    #CONNECT EVERYTHING TO MARFARK
+    add_edge_by_name(G,"MARFARK", "BEKVAM III",  name_to_index)
+    add_edge_by_name(G,"MARFARK", "MARTALE",  name_to_index)
+    add_edge_by_name(G,"MARFARK", "MATAR BAY",  name_to_index)
+
+    #CONNECT EVERYTHING TO MATAR BAY
+    add_edge_by_name(G,"MATAR BAY", "MARTALE",  name_to_index)
+    add_edge_by_name(G,"MATAR BAY", "MEISSA",  name_to_index)
+
+    #CONNECT EVERYTHING TO MEISSA
+    add_edge_by_name(G,"MEISSA", "WASAT",  name_to_index)
+    add_edge_by_name(G,"MEISSA", "X-45",  name_to_index)
+
+    #CONNECT EVERYTHING TO X-45
+    add_edge_by_name(G,"X-45", "WASAT",  name_to_index)
+    add_edge_by_name(G,"X-45", "VEGA BAY",  name_to_index)
+
+    #CONNECT EVERYTHING TO VEGA BAY
+    add_edge_by_name(G,"VEGA BAY", "WASAT",  name_to_index)
+    add_edge_by_name(G,"VEGA BAY", "Mox",  name_to_index)
+    add_edge_by_name(G,"VEGA BAY", "WEZEN",  name_to_index)
+
+    #CONNECT EVERYTHING TO WEZEN
+    add_edge_by_name(G,"WEZEN", "VARYLIA 5",  name_to_index)
+
+    #CONNECT EVERYTHING TO MOX
+    add_edge_by_name(G,"Mox", "VARYLIA 5",  name_to_index)
+
+    #CONNECT EVERYTHING TO VARYLIA 5
+    add_edge_by_name(G,"VARYLIA 5", "K",  name_to_index)
+    add_edge_by_name(G,"VARYLIA 5", "CHOEPESSA IV",  name_to_index)
+    add_edge_by_name(G,"VARYLIA 5", "USTOTU",  name_to_index)
+
+    #CONNECT EVERYTHING TO CHOEPESSA IV
+    add_edge_by_name(G,"CHOEPESSA IV", "K",  name_to_index)
+    add_edge_by_name(G,"CHOEPESSA IV", "USTOTU",  name_to_index)
+    add_edge_by_name(G,"CHOEPESSA IV", "FURY",  name_to_index)
+    add_edge_by_name(G,"CHOEPESSA IV", "CHARON PRIME",  name_to_index)
+    add_edge_by_name(G,"CHOEPESSA IV", "CHARBAL-VII",  name_to_index)
+
+    #CONNECT EVERYTHING TO CHARON PRIME
+    add_edge_by_name(G,"CHARON PRIME", "MARTALE",  name_to_index)
+    add_edge_by_name(G,"CHARON PRIME", "CHARBAL-VII",  name_to_index)
+    add_edge_by_name(G,"CHARON PRIME", "BEKVAM III",  name_to_index)
+
+    #CONNECT EVERYTHING TO CHARBAL-VII
+    add_edge_by_name(G,"CHARBAL-VII", "JULHEIM",  name_to_index)
+    add_edge_by_name(G,"CHARBAL-VII", "MORT",  name_to_index)
+
+    #CONNECT EVERYTHING TO USTOTU
+    add_edge_by_name(G,"USTOTU", "TROOST",  name_to_index)
+    add_edge_by_name(G,"USTOTU", "VANDALON IV",  name_to_index)
+    add_edge_by_name(G,"USTOTU", "FURY",  name_to_index)
+
+    #CONNECT EVERYTHING TO VANDALON IV
+    add_edge_by_name(G,"VANDALON IV", "TROOST",  name_to_index)
+    add_edge_by_name(G,"VANDALON IV", "INGMAR",  name_to_index)
+    add_edge_by_name(G,"VANDALON IV", "MAIA",  name_to_index)
+    add_edge_by_name(G,"VANDALON IV", "MANTES",  name_to_index)
+
+    #CONNECT EVERYTHING TO VINDEMITARIX PRIME
+    add_edge_by_name(G,"VINDEMITARIX PRIME", "MEKBUDA",  name_to_index)
+
+    #CONNECT EVERYTHING TO MEKBUD
+    add_edge_by_name(G,"MEKBUDA", "CYBERSTAN",  name_to_index)
+
+    #CONNECT EVERYTHING TO CYBERSTAN
+    add_edge_by_name(G,"CYBERSTAN", "MERGA IV",  name_to_index)
+
+
+
+    #CONNECT EVERYTHING BELOW AUTOMATONS THAT ARE HELD BY HUMANS
+
+
+    #CONNECT EVERYTHING TO BOREA
+    add_edge_by_name(G,"BOREA", "GUNVALD",  name_to_index)
+    add_edge_by_name(G,"BOREA", "DUMA TYR",  name_to_index)
+
+    #CONNECT EVERYTHING TO DUMA TYR
+    add_edge_by_name(G,"DUMA TYR", "BEKVAM III",  name_to_index)
+    add_edge_by_name(G,"DUMA TYR", "OSLO STATION",  name_to_index)
+    add_edge_by_name(G,"DUMA TYR", "JULHEIM",  name_to_index)
+
+    #CONNECT EVERYTHING TO BEKVAM III
+    add_edge_by_name(G,"BEKVAM III", "JULHEIM",  name_to_index)
+
+    #CONNECT EVERYTHING TO JULHEIM
+    add_edge_by_name(G,"JULHEIM", "DOLPH",  name_to_index)
+
+    #CONNECT EVERYTHING TO DOLPH
+    add_edge_by_name(G,"DOLPH", "OSLO STATION",  name_to_index)
+    add_edge_by_name(G,"DOLPH", "CAPH",  name_to_index)
+
+    #CONNECT EVERYTHING TO OSLO STATION
+    add_edge_by_name(G,"OSLO STATION", "GUNVALD",  name_to_index)
+
+    #CONNECT EVERYTHING TO PÖPLI IX
+    add_edge_by_name(G,"PÖPLI IX", "MORT",  name_to_index)
+    add_edge_by_name(G,"PÖPLI IX", "LASTOFE",  name_to_index)
+    add_edge_by_name(G,"PÖPLI IX", "INGMAR",  name_to_index)
+    add_edge_by_name(G,"PÖPLI IX", "MANTES",  name_to_index)
+
+    #CONNECT EVERYTHING TO MORT
+    add_edge_by_name(G,"MORT", "FURY",  name_to_index)
+    add_edge_by_name(G,"MORT", "INGMAR",  name_to_index)
+
+    #CONNECT EVERYTHING TO CAPH
+    add_edge_by_name(G,"CAPH", "LASTOFE",  name_to_index)
+    add_edge_by_name(G,"CAPH", "CASTOR",  name_to_index)
+
+    #CONNECT EVERYTHING TO CASTOR
+    add_edge_by_name(G,"CASTOR", "TIEN KWAN",  name_to_index)
+
+    #CONNECT EVERYTHING TO TIEN KWAN
+    add_edge_by_name(G,"TIEN KWAN", "LASTOFE",  name_to_index)
+    add_edge_by_name(G,"TIEN KWAN", "DRAUPNIR",  name_to_index)
+
+    #CONNECT EVERYTHING TO DRAUPNIR
+    add_edge_by_name(G,"DRAUPNIR", "MANTES",  name_to_index)
+    add_edge_by_name(G,"DRAUPNIR", "UBANEA",  name_to_index)
+    add_edge_by_name(G,"DRAUPNIR", "MALEVELON CREEK",  name_to_index)
+
+    #CONNECT EVERYTHING TO UBANEA
+    add_edge_by_name(G,"UBANEA", "TIBIT",  name_to_index)
+    add_edge_by_name(G,"UBANEA", "DURGEN",  name_to_index)
+
+    #CONNECT EVERYTHING TO DURGEN
+    add_edge_by_name(G,"DURGEN", "MALEVELON CREEK",  name_to_index)
+
+    #CONNECT EVERYTHING TO MALEVELON CREEK
+    add_edge_by_name(G,"MALEVELON CREEK", "MAIA",  name_to_index)
+    add_edge_by_name(G,"MALEVELON CREEK", "MANTES",  name_to_index)
+
+
+    #DO ILLUMINATE SECTORS
+
+
+    #CONNECT EVERYTHING TO OBARI
+    add_edge_by_name(G,"OBARI", "BALDRICK PRIME",  name_to_index)
+    add_edge_by_name(G,"OBARI", "VIRIDIA PRIME",  name_to_index)
+
+    #CONNECT EVERYTHING TO BALDRICK PRIME
+    add_edge_by_name(G,"BALDRICK PRIME", "ILDUNA PRIME",  name_to_index)
+    add_edge_by_name(G,"BALDRICK PRIME", "LIBERTY RIDGE",  name_to_index)
+
+    #CONNECT EVERYTHING TO VIRIDIA PRIME
+    add_edge_by_name(G,"VIRIDIA PRIME", "EMORATH",  name_to_index)
+    add_edge_by_name(G,"VIRIDIA PRIME", "DILUVIA",  name_to_index)
+
+    #CONNECT EVERYTHING TO EMORATH
+    add_edge_by_name(G,"EMORATH", "ILDUNA PRIME",  name_to_index)
+    add_edge_by_name(G,"EMORATH", "LIBERTY RIDGE",  name_to_index)
+    add_edge_by_name(G,"EMORATH", "EAST IRIDIUM TRADING BAY",  name_to_index)
+
+    #CONNECT EVERYTHING TO LIBERTY RIDGE
+    add_edge_by_name(G,"LIBERTY RIDGE", "CANOPUS",  name_to_index)
+
+    #CONNECT EVERYTHING TO CANOPUS
+    add_edge_by_name(G,"CANOPUS", "OSUPSAM",  name_to_index)
+    add_edge_by_name(G,"CANOPUS", "BUNDA SECUNDUS",  name_to_index)
+
+    #CONNECT EVERYTHING TO BUNDA SECUNDUS
+    add_edge_by_name(G,"BUNDA SECUNDUS", "KRAZ",  name_to_index)
+
+    #CONNECT EVERYTHING TO KRAZ
+    add_edge_by_name(G,"KRAZ", "LENG SECUNDUS",  name_to_index)
+
+    #CONNECT EVERYTHING TO LENG SCUNDUS
+    add_edge_by_name(G,"LENG SECUNDUS", "KLAKA 5",  name_to_index)
+    add_edge_by_name(G,"LENG SECUNDUS", "STOUT",  name_to_index)
+
+    #CONNECT EVERYTHING TO STOUT
+    add_edge_by_name(G,"STOUT", "STOR THA PRIME",  name_to_index)
+
+    #CONNECT EVERYTHING TO STOR THA PRIME
+    add_edge_by_name(G,"STOR THA PRIME", "TERMADON",  name_to_index)
+    add_edge_by_name(G,"STOR THA PRIME", "SPHERION",  name_to_index)
+
+    #CONNECT EVERYTHING TO SPHERION
+    add_edge_by_name(G,"SPHERION", "SIRIUS",  name_to_index)
+    add_edge_by_name(G,"SPHERION", "KNETH PORT",  name_to_index)
+
+    #CONNECT EVERYTHING TO KNETH PORT
+    add_edge_by_name(G,"KNETH PORT", "KLAKA 5",  name_to_index)
+    add_edge_by_name(G,"KNETH PORT", "BOTEIN",  name_to_index)
+    add_edge_by_name(G,"KNETH PORT", "BRINK-2",  name_to_index)
+
+    #CONNECT EVERYTHING TO KLAKA 5
+    add_edge_by_name(G, "KLAKA 5", "OSUPSAM",  name_to_index)
+
+    #CONNECT EVERYTHING TO BRINK-2
+    add_edge_by_name(G,"BRINK-2", "OSUPSAM",  name_to_index)
+    add_edge_by_name(G,"BRINK-2", "EAST IRIDIUM TRADING BAY",  name_to_index)
+
+    #CONNECT EVERYTHING TO EAST IRIDIUM TRADING BAY
+    add_edge_by_name(G,"EAST IRIDIUM TRADING BAY", "ELYSIAN MEADOWS",  name_to_index)
+
+
+    #CONNECT EVERYTHING TO DILUVIA 
+    add_edge_by_name(G,"DILUVIA", "SOLGHAST",  name_to_index)
+    add_edge_by_name(G,"DILUVIA", "IRULTA",  name_to_index)
+
+    #CONNECT EVERYTHING TO SOLGHAST
+    add_edge_by_name(G,"SOLGHAST", "REAF",  name_to_index)
+    add_edge_by_name(G,"SOLGHAST", "EFFLUVIA",  name_to_index)
+
+    #CONNECT EVERYTHING TO EFFLUVIA
+    add_edge_by_name(G,"EFFLUVIA", "PARSH",  name_to_index)
+    add_edge_by_name(G,"EFFLUVIA", "SEYSHEL BEACH",  name_to_index)
+
+    #CONNECT EVERYTHING TO SEYSHEL BEACH
+    add_edge_by_name(G,"SEYSHEL BEACH", "FORT SANCTUARY",  name_to_index)
+    add_edge_by_name(G,"SEYSHEL BEACH", "KERTH SECUNDUS",  name_to_index)
+    add_edge_by_name(G,"SEYSHEL BEACH", "MYRIUM",  name_to_index)
+
+    #CONNECT EVERYTHING TO FORT SANCTUARY
+    add_edge_by_name(G,"FORT SANCTUARY", "EUKORIA",  name_to_index)
+
+    #CONNECT EVERTYHING TO IRULTA
+    add_edge_by_name(G,"IRULTA", "ELYSIAN MEADOWS",  name_to_index)
+    add_edge_by_name(G,"IRULTA", "REAF",  name_to_index)
+
+    #CONNECT EVERYTHING TO ELYSIAN MEADOWS
+    add_edge_by_name(G,"ELYSIAN MEADOWS", "CALYPSO",  name_to_index)
+
+    #CONNECT EVERYTHING TO CALYPSO
+    add_edge_by_name(G,"CALYPSO", "ALDERIDGE COVE",  name_to_index)
+    add_edge_by_name(G,"CALYPSO", "OUTPOST 32",  name_to_index)
+    add_edge_by_name(G,"CALYPSO", "ANDAR",  name_to_index)
+
+    #CONNECT EVERYTHING TO ALDERIDGE COVE
+    add_edge_by_name(G,"ALDERIDGE COVE", "BELLATRIX",  name_to_index)
+    add_edge_by_name(G,"ALDERIDGE COVE", "BOTEIN",  name_to_index)
+
+    #CONNECT EVERYTHING TO BELLATRIX
+    add_edge_by_name(G,"BELLATRIX", "KHANDARK",  name_to_index)
+
+    #CONNECT EVERYTHING TO BOTEIN
+    add_edge_by_name(G,"BOTEIN", "KHANDARK",  name_to_index)
+
+    #CONNECT EVERYTHING TO KHANDARK
+    add_edge_by_name(G,"KHANDARK", "SKAT BAY",  name_to_index)
+    add_edge_by_name(G,"KHANDARK", "ASPEROTH PRIME",  name_to_index)
+
+    #CONNECT EVERYTHINGN TO SKAT BAY
+    add_edge_by_name(G,"SKAT BAY", "SIRIUS",  name_to_index)
+    add_edge_by_name(G,"SKAT BAY", "SIEMNOT",  name_to_index)
+
+    #CONNECT EVERYTHING TO REAF
+    add_edge_by_name(G,"REAF", "IRULTA",  name_to_index)
+    add_edge_by_name(G,"REAF", "OUTPOST 32",  name_to_index)
+    add_edge_by_name(G,"REAF", "PARSH",  name_to_index)
+
+    #CONNECT EVERYTHING TO ANDAR
+    add_edge_by_name(G,"ANDAR", "ASPEROTH PRIME",  name_to_index)
+    add_edge_by_name(G,"ANDAR", "ALATHFAR XI",  name_to_index)
+
+    #CONNECT EVERYTHING TO ASPEROTH PRIME
+    add_edge_by_name(G,"ASPEROTH PRIME", "KEID",  name_to_index)
+
+    #CONNECT EVERYTHING TO KEID
+    add_edge_by_name(G,"KEID", "KARLIA",  name_to_index)
+    add_edge_by_name(G,"KEID", "SHETE",  name_to_index)
+
+    #CONNECT EVERYTHING TO SHETE
+    add_edge_by_name(G,"SHETE", "SETIA",  name_to_index)
+
+    #CONNECT EVERYTHING TO PARSH
+    add_edge_by_name(G,"PARSH", "REAF",  name_to_index)
+    add_edge_by_name(G,"PARSH", "KERTH SECUNDUS",  name_to_index)
+    add_edge_by_name(G,"PARSH", "GENESIS PRIME",  name_to_index)
+
+    #CONNECT EVERYTHING TO GENESIS PRIME
+    add_edge_by_name(G,"GENESIS PRIME", "OASIS",  name_to_index)
+    add_edge_by_name(G,"GENESIS PRIME", "ALARAPH",  name_to_index)
+
+    #CONNECT EVERYTHING TO ALARAPH
+    add_edge_by_name(G,"ALARAPH", "ALATHFAR XI",  name_to_index)
+    add_edge_by_name(G,"ALARAPH", "HYDROBIUS",  name_to_index)
+
+    #CONNECT EVERYTHING TO ALATHFAR XI
+    add_edge_by_name(G,"ALATHFAR XI", "KARLIA",   name_to_index)
+    add_edge_by_name(G,"ALATHFAR XI", "ALARAPH",   name_to_index)
+
+    #CONNECT EVERYTHING TO KARLIA
+    add_edge_by_name(G,"KARLIA","KEID",   name_to_index)
+    add_edge_by_name(G,"KARLIA","HYDROBIUS",   name_to_index)
+
+    #CONNECT EVERYTHING TO HYDROBIUS
+    add_edge_by_name(G,"HYDROBIUS", "HEZE BAY",   name_to_index)
+    add_edge_by_name(G,"HYDROBIUS", "SENGE 23",   name_to_index)
+    add_edge_by_name(G,"HYDROBIUS", "SETIA",   name_to_index)
+
+    #CONNECT EVERYTHING TO KERTH SECUNDUS
+    add_edge_by_name(G,"KERTH SECUNDUS", "GRAFMERE",   name_to_index)
+    add_edge_by_name(G,"KERTH SECUNDUS", "MYRIUM",   name_to_index)
+
+    #CONNECT EVERYTHING TO GRAFMERE
+    add_edge_by_name(G,"GRAFMERE", "OASIS",   name_to_index)
+    add_edge_by_name(G,"GRAFMERE", "IRO",   name_to_index)
+
+    #CONNECT EVERYTHING TO OASIS
+    add_edge_by_name(G,"OASIS", "ALAMAK VII",  name_to_index)
+    add_edge_by_name(G,"OASIS", "ALARAPH",  name_to_index)
+
+    #CONNECT EVERYTHING TO ALAMAK VII
+    add_edge_by_name(G,"ALAMAK VII", "NEW STOCKHOLM",  name_to_index)
+    add_edge_by_name(G,"ALAMAK VII", "ALAIRT III",  name_to_index)
+
+    #CONNECT EVERYTHING TO ALAIRT III
+    add_edge_by_name(G,"ALAIRT III", "NEW STOCKHOLM", name_to_index)
+    add_edge_by_name(G,"ALAIRT III", "HEZE BAY", name_to_index)
+    add_edge_by_name(G,"ALAIRT III", "HERTHON SECUNDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO HEZE BAY
+    add_edge_by_name(G,"HEZE BAY", "HYDROBIUS", name_to_index)
+    add_edge_by_name(G,"HEZE BAY", "RIRGA BAY", name_to_index)
+
+    #CONNECT EVERYTHING TO RIRGA BAY
+    add_edge_by_name(G,"RIRGA BAY", "HORT", name_to_index)
+    add_edge_by_name(G,"RIRGA BAY", "SEASSE", name_to_index)
+
+    #CONNECT EVERYTHING TO SEASSE
+    add_edge_by_name(G,"SEASSE", "SENGE 23", name_to_index)
+    add_edge_by_name(G,"SEASSE", "ROGUE 5", name_to_index)
+
+    #CONNECT EVERYTHING TO SENGE 23
+    add_edge_by_name(G,"SENGE 23", "SETIA", name_to_index)
+
+    #CONNECT EVERYTHING TO ROGUE 5
+    add_edge_by_name(G,"ROGUE 5", "RD-4", name_to_index)
+
+    #CONNECT EVERYTHING TO RD-4
+    add_edge_by_name(G,"RD-4", "HESOE PRIME", name_to_index)
+    add_edge_by_name(G,"RD-4", "HORT", name_to_index)
+
+    #CONNECT EVERYTHING TO HORT 
+    add_edge_by_name(G,"HORT", "HERTHON SECUNDUS", name_to_index)
+    add_edge_by_name(G,"HORT", "HESOE PRIME", name_to_index)
+
+    #CONNECT EVERYTHING TO HERTHON SECUNDUS
+    add_edge_by_name(G,"HERTHON SECUNDUS", "AIN-5", name_to_index)
+    add_edge_by_name(G,"HERTHON SECUNDUS", "ZEA RUGOSIA", name_to_index)
+
+    #CONNECT EVERYTHING TO ZEA RUGOSIA 
+    add_edge_by_name(G,"ZEA RUGOSIA", "AFOYAY BAY", name_to_index)
+    add_edge_by_name(G,"ZEA RUGOSIA", "HALDUS", name_to_index)
+
+    #CONNECT EVERYTHING TO HALDUS
+    add_edge_by_name(G,"HALDUS", "ADHARA", name_to_index)
+
+    #CONNECT EVERYTHING TO ADHARA
+    add_edge_by_name(G,"ADHARA", "AFOYAY BAY", name_to_index)
+    add_edge_by_name(G,"ADHARA", "MOG", name_to_index)
+
+    #CONNECT EVERYTHING TO AFOYAY BAY
+    add_edge_by_name(G,"AFOYAY BAY", "AIN-5", name_to_index)
+    add_edge_by_name(G,"AFOYAY BAY", "VALMOX", name_to_index)
+
+    #CONNECT EVERYTHING TO VALMOX
+    add_edge_by_name(G,"VALMOX", "IRO", name_to_index)
+    add_edge_by_name(G,"VALMOX", "MOG", name_to_index)
+    add_edge_by_name(G,"VALMOX", "MYRIUM", name_to_index)
+
+    #CONNECT EVERYTHING TO MOG
+    add_edge_by_name(G,"MOG", "REGNUS", name_to_index)
+
+    #CONNECT EVERYTHING TO REGNUS
+    add_edge_by_name(G,"REGNUS", "EUKORIA", name_to_index)
+
+    #CONNECT EVERYTHING TO EUKORIA
+    add_edge_by_name(G,"EUKORIA", "MYRIUM", name_to_index)
+
+    #CONNECT EVERYTHING TO AIN-5
+    add_edge_by_name(G,"AIN-5", "AFOYAY BAY", name_to_index)
+    add_edge_by_name(G,"AIN-5", "HERTHON SECUNDUS", name_to_index)
+    #CONNECT EVERYTHING TO MYRIUM
+    #add_edge_by_name(G,"MYRIUM", "", name_to_index)
+
+    #CONNECT EVERYTHING TO NEW STOCKHOLM
+    add_edge_by_name(G,"NEW STOCKHOLM", "IRO", name_to_index)
+
+    return skipped_edges
 
 
 
@@ -206,38 +894,6 @@ def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) ->
     return indexes
 
 
-def load_manual_edges_from_notebook() -> list[tuple[str, str]]:
-    if not NOTEBOOK_FILE.exists():
-        logging.warning("Notebook not found for manual graph edges: %s", NOTEBOOK_FILE)
-        return []
-
-    try:
-        notebook = json.loads(NOTEBOOK_FILE.read_text(encoding="utf-8"))
-    except Exception as exc:
-        logging.warning("Unable to parse notebook for manual graph edges: %s", exc)
-        return []
-
-    pattern = re.compile(
-        r'add_edge_by_name\(G,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*name_to_index\)'
-    )
-    edges: list[tuple[str, str]] = []
-
-    for cell in notebook.get("cells", []):
-        if cell.get("cell_type") != "code":
-            continue
-        for line in cell.get("source", []):
-            match = pattern.search(line)
-            if match:
-                edges.append((match.group(1), match.group(2)))
-
-    if edges:
-        logging.info("Loaded %s manual edges from notebook", len(edges))
-    else:
-        logging.warning("No manual edges found in notebook add_edge_by_name calls")
-
-    return edges
-
-
 def build_graph(planets: list[dict[str, Any]], owner_by_index: dict[int, str]) -> nx.Graph:
     graph = nx.Graph()
     for planet in planets:
@@ -250,29 +906,13 @@ def build_graph(planets: list[dict[str, Any]], owner_by_index: dict[int, str]) -
         if planet.get("name")
     }
 
-    manual_edges = load_manual_edges_from_notebook()
-    if manual_edges:
-        skipped_edges = 0
-        for source_name, dest_name in manual_edges:
-            src = name_to_index.get(source_name)
-            dst = name_to_index.get(dest_name)
-            if src is None or dst is None:
-                skipped_edges += 1
-                continue
-            graph.add_edge(src, dst)
-        logging.info(
-            "Applied manual graph edges: %s added, %s skipped",
-            graph.number_of_edges(),
-            skipped_edges,
-        )
-        return graph
+    skipped_edges = apply_manual_edges(graph, name_to_index)
 
-    logging.warning("Falling back to API waypoints for graph construction")
-    for planet in planets:
-        src = planet["index"]
-        for dst in planet.get("waypoints", []):
-            if dst in owner_by_index:
-                graph.add_edge(src, dst)
+    logging.info(
+        "Applied hardcoded manual graph edges: %s added, %s skipped",
+        graph.number_of_edges(),
+        skipped_edges,
+    )
 
     return graph
 
