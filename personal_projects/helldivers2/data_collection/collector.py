@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -880,6 +881,18 @@ def get_enemy_attacking_planet_and_owner(
 
     return None, None
 
+#below is old way, might have to revert back to this incase new code doesn't work   
+# def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) -> list[int]:
+#     if not major_order_payload:
+#         return []
+
+#     tasks = major_order_payload[0].get("setting", {}).get("tasks", [])
+#     indexes: list[int] = []
+#     for task in tasks:
+#         values = task.get("values", [])
+#         if len(values) > 2 and isinstance(values[2], int):
+#             indexes.append(values[2])
+#     return indexes
 
 def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) -> list[int]:
     if not major_order_payload:
@@ -887,10 +900,15 @@ def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) ->
 
     tasks = major_order_payload[0].get("setting", {}).get("tasks", [])
     indexes: list[int] = []
+
     for task in tasks:
         values = task.get("values", [])
-        if len(values) > 2 and isinstance(values[2], int):
-            indexes.append(values[2])
+        value_types = task.get("valueTypes", [])
+
+        for v, t in zip(values, value_types):
+            if t == 12:  # 12 = planet index
+                indexes.append(v)
+
     return indexes
 
 
@@ -1014,6 +1032,23 @@ def run_collection_once() -> pd.DataFrame:
     save_history(df_history)
 
     logging.info("Saved %s new rows. Total rows now: %s", len(df), len(df_history))
+
+    #added debug code below
+    df = pd.DataFrame(planet_rows)
+
+    print(df.loc[df["name"].isin(["BEKVAM III", "MARFARK"]), ["name", "currentOwner"]])
+    print(df.loc[df["name"].isin(["FURY", "CHOEPESSA IV"]), ["name", "currentOwner"]])
+
+    # import json
+    # print(json.dumps(major_order_raw, indent=2))
+
+    print("MAJOR ORDER INDEXES:", major_order_planet_indexes)
+
+    print(
+    df.loc[df["planet_index"].isin(major_order_planet_indexes),
+           ["name", "planet_index"]]
+)
+    #end of debug code
     return df_history
 
 
@@ -1023,6 +1058,11 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(message)s",
     )
     run_collection_once()
+
+    
+
+
+#added debug code below
 
 
 if __name__ == "__main__":
