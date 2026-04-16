@@ -6,13 +6,6 @@ This folder now contains a CI-friendly collector script:
 - `requirements.txt`: dependencies for the collector runtime
 - `.github/workflows/helldivers-data-collection.yml`: hourly workflow
 
-## Repository configuration
-
-Set these in your GitHub repository settings:
-
-- Secret: `HD2_CONTACT_EMAIL` (required)
-- Variable: `HD2_CLIENT_NAME` (optional, defaults to `helldivers-machine_learning-project`)
-
 ## Triggering runs
 
 - Automatic run: every hour (`cron: 0 * * * *`)
