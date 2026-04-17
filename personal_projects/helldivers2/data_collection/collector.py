@@ -23,7 +23,7 @@ BASE_URL = "https://api.helldivers2.dev/api"
 HISTORY_FILE = Path(__file__).resolve().parent / "planet_history.csv"
 
 DEFAULT_CLIENT = "helldivers-machine_learning-project"
-DEFAULT_CONTACT = "replace-with-email@example.com"
+DEFAULT_CONTACT = "jacksonwaiver@gmail.com"
 
 
 def apply_manual_edges(G: nx.Graph, name_to_index: dict[str, int]) -> int:
