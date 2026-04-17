@@ -12,6 +12,12 @@ import pandas as pd
 import requests
 from pandas.errors import EmptyDataError
 
+from sqlalchemy import create_engine
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+
 
 BASE_URL = "https://api.helldivers2.dev/api"
 HISTORY_FILE = Path(__file__).resolve().parent / "planet_history.csv"
@@ -1027,29 +1033,57 @@ def run_collection_once() -> pd.DataFrame:
     df["CST_H_M_S"] = now.strftime("%H:%M:%S")
     df["timestamp"] = now
 
-    df_history = load_history()
-    df_history = pd.concat([df_history, df], ignore_index=True)
-    save_history(df_history)
 
-    logging.info("Saved %s new rows. Total rows now: %s", len(df), len(df_history))
 
+    #BELOW IS FOR SAVING TO LOCAL CSV
+
+
+    # df_history = load_history()
+    # df_history = pd.concat([df_history, df], ignore_index=True)
+    # save_history(df_history)
+
+    # logging.info("Saved %s new rows. Total rows now: %s", len(df), len(df_history))
+
+
+    #END OF CSV ADDING DATA
+
+    #below is for saving to data postgres
+
+
+
+    df.to_sql(
+    "planet_history",
+    engine,
+    if_exists="append",
+    index=False
+    )
+
+    logging.info("Inserted %s rows into PostgreSQL", len(df))
+
+    if DATABASE_URL is None:
+        raise ValueError("DATABASE_URL not set")
     #added debug code below
-    df = pd.DataFrame(planet_rows)
+#     df = pd.DataFrame(planet_rows)
 
-    print(df.loc[df["name"].isin(["BEKVAM III", "MARFARK"]), ["name", "currentOwner"]])
-    print(df.loc[df["name"].isin(["FURY", "CHOEPESSA IV"]), ["name", "currentOwner"]])
+#     print(df.loc[df["name"].isin(["BEKVAM III", "MARFARK"]), ["name", "currentOwner"]])
+#     print(df.loc[df["name"].isin(["FURY", "CHOEPESSA IV"]), ["name", "currentOwner"]])
 
-    # import json
-    # print(json.dumps(major_order_raw, indent=2))
+#     # import json
+#     # print(json.dumps(major_order_raw, indent=2))
 
-    print("MAJOR ORDER INDEXES:", major_order_planet_indexes)
+#     print("MAJOR ORDER INDEXES:", major_order_planet_indexes)
 
-    print(
-    df.loc[df["planet_index"].isin(major_order_planet_indexes),
-           ["name", "planet_index"]]
-)
+#     print(
+#     df.loc[df["planet_index"].isin(major_order_planet_indexes),
+#            ["name", "planet_index"]]
+# )
     #end of debug code
-    return df_history
+
+    #below is for csv local saving 
+    # return df_history
+
+    #below is for postgres saving, returning df for testing purposes
+    return df
 
 
 def main() -> None:
