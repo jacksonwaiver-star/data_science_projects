@@ -22,7 +22,7 @@ engine = create_engine(DATABASE_URL)
 BASE_URL = "https://api.helldivers2.dev/api"
 HISTORY_FILE = Path(__file__).resolve().parent / "planet_history.csv"
 
-DEFAULT_CLIENT = "helldivers-machine_learning-project"
+DEFAULT_CLIENT = "helldivers-machine_learning-project_jackson_weaver"
 DEFAULT_CONTACT = "jacksonwaiver@gmail.com"
 
 
