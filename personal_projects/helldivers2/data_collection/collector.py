@@ -16,6 +16,12 @@ from sqlalchemy import create_engine
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+#make sure database url is set in environment variables, if not raise error
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not set")
+
+#print out whether database url exists for debugging purposes
+print("DATABASE_URL exists:", DATABASE_URL is not None)
 engine = create_engine(DATABASE_URL)
 
 
