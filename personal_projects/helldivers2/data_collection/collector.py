@@ -773,7 +773,11 @@ def fetch_json(
 ) -> Any:
     for attempt in range(1, max_retries + 1):
         try:
-            response = requests.get(url, headers=headers, timeout=timeout)
+            response = requests.get(
+            url,
+            headers=headers,
+            timeout=(10, 90)  # (connect timeout, read timeout)
+            )
             status = response.status_code
             if status in (429, 500, 502, 503, 504):
                 sleep_for = backoff_seconds * attempt
