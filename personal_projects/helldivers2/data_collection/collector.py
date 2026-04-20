@@ -768,7 +768,7 @@ def fetch_json(
     url: str,
     headers: dict[str, str],
     timeout: int = 30,
-    max_retries: int = 5,
+    max_retries: int = 2,
     backoff_seconds: float = 30.0,
 ) -> Any:
     for attempt in range(1, max_retries + 1):
@@ -789,6 +789,7 @@ def fetch_json(
                     max_retries,
                     sleep_for,
                 )
+                
                 time.sleep(sleep_for)
                 continue
             response.raise_for_status()
