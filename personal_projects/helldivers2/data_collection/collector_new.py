@@ -1231,6 +1231,7 @@ def run_collection_once() -> pd.DataFrame:
         int(row["planet_index"]): str(row["currentOwner"])
         for _, row in df.iterrows()
     }
+    print("MAJOR ORDER ID IS " + str(major_order_id))
     print(planet_to_order)
     print(df["planet_index"].head(10))
     graph = build_graph(planets, owner_by_index)
