@@ -1220,7 +1220,13 @@ def run_collection_once() -> pd.DataFrame:
 
     df = pd.DataFrame(planet_rows)
     df["major_order_dispatch"] = major_order_dispatch
-    df["major_order_id"] = df["planet_index"].map(planet_to_order).fillna(-1).astype(int)
+    #major_order_id = major_order_raw[0]["id32"] if major_order_raw else -1
+    if isinstance(major_order_raw, list) and len(major_order_raw) > 0:
+        major_order_id = major_order_raw[0].get("id32", -1)
+    else:
+        major_order_id = -1
+    df["major_order_id"] = major_order_id
+    #df["major_order_id"] = df["planet_index"].map(planet_to_order).fillna(-1).astype(int)
     owner_by_index = {
         int(row["planet_index"]): str(row["currentOwner"])
         for _, row in df.iterrows()
