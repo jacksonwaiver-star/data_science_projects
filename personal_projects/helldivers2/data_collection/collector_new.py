@@ -1072,23 +1072,44 @@ def get_enemy_attacking_planet_and_owner(
 #             indexes.append(values[2])
 #     return indexes
 
+#old way below
+# def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) -> list[int]:
+#     if not major_order_payload:
+#         return []
+
+#     tasks = major_order_payload[0].get("setting", {}).get("tasks", [])
+#     indexes: list[int] = []
+
+#     for task in tasks:
+#         values = task.get("values", [])
+#         value_types = task.get("valueTypes", [])
+
+#         for v, t in zip(values, value_types):
+#             if t == 12:  # 12 = planet index
+#                 indexes.append(v)
+
+#     return indexes
+
 def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) -> list[int]:
     if not major_order_payload:
         return []
 
-    tasks = major_order_payload[0].get("setting", {}).get("tasks", [])
     indexes: list[int] = []
 
-    for task in tasks:
-        values = task.get("values", [])
-        value_types = task.get("valueTypes", [])
+    # 🔥 LOOP ALL MAJOR ORDERS (not just [0])
+    for order in major_order_payload:
+        tasks = order.get("setting", {}).get("tasks", [])
 
-        for v, t in zip(values, value_types):
-            if t == 12:  # 12 = planet index
-                indexes.append(v)
+        for task in tasks:
+            values = task.get("values", [])
+            value_types = task.get("valueTypes", [])
 
-    return indexes
+            # 🔥 SAFE iteration (prevents mismatch bugs)
+            for i in range(min(len(values), len(value_types))):
+                if value_types[i] == 12:  # 12 = planet index
+                    indexes.append(values[i])
 
+    return list(set(indexes))  # remove duplicates
 
 def build_graph(planets: list[dict[str, Any]], owner_by_index: dict[int, str]) -> nx.Graph:
     graph = nx.Graph()
