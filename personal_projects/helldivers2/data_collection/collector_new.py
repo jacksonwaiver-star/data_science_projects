@@ -1132,7 +1132,27 @@ def build_graph(planets: list[dict[str, Any]], owner_by_index: dict[int, str]) -
     )
 
     return graph
+#below gets the major order id
+def get_major_order_mapping(major_order_payload):
+    planet_to_order = {}
 
+    if not major_order_payload:
+        return planet_to_order
+
+    for order in major_order_payload:
+        order_id = order.get("id", -1)
+        tasks = order.get("setting", {}).get("tasks", [])
+
+        for task in tasks:
+            values = task.get("values", [])
+            value_types = task.get("valueTypes", [])
+
+            for i in range(min(len(values), len(value_types))):
+                if value_types[i] == 12:  # planet index
+                    planet_idx = values[i]
+                    planet_to_order[planet_idx] = order_id
+
+    return planet_to_order
 
 def run_collection_once() -> pd.DataFrame:
     headers = get_headers()
@@ -1148,7 +1168,8 @@ def run_collection_once() -> pd.DataFrame:
 
 
     major_order_planet_indexes = get_major_order_planet_indexes(major_order_raw)
-
+    #below gets the major order id
+    planet_to_order = get_major_order_mapping(major_order_raw)
     
     major_order_dispatch = (
             assignments[0].get("briefing", "NONE")
@@ -1197,7 +1218,7 @@ def run_collection_once() -> pd.DataFrame:
 
     df = pd.DataFrame(planet_rows)
     df["major_order_dispatch"] = major_order_dispatch
-
+    df["major_order_id"] = df["planet_index"].map(planet_to_order).fillna(-1).astype(int)
     owner_by_index = {
         int(row["planet_index"]): str(row["currentOwner"])
         for _, row in df.iterrows()
