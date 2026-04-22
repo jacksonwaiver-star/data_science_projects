@@ -1223,6 +1223,8 @@ def run_collection_once() -> pd.DataFrame:
         int(row["planet_index"]): str(row["currentOwner"])
         for _, row in df.iterrows()
     }
+    print(planet_to_order)
+    print(df["planet_index"].head(10))
     graph = build_graph(planets, owner_by_index)
     # 🔥 COMPUTE PLAYABLE PLANETS (frontline logic)
     playable_planets = get_planets_within_n_of_humans(
