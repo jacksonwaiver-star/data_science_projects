@@ -1139,7 +1139,9 @@ def get_major_order_mapping(major_order_payload):
     if not major_order_payload:
         return planet_to_order
 
-    for order in major_order_payload:
+    orders = major_order_payload if isinstance(major_order_payload, list) else [major_order_payload]
+
+    for order in orders:
         order_id = order.get("id32", -1)
         tasks = order.get("setting", {}).get("tasks", [])
 
