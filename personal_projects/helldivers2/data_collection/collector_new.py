@@ -1140,7 +1140,7 @@ def get_major_order_mapping(major_order_payload):
         return planet_to_order
 
     for order in major_order_payload:
-        order_id = order.get("id", -1)
+        order_id = order.get("id32", -1)
         tasks = order.get("setting", {}).get("tasks", [])
 
         for task in tasks:
@@ -1292,9 +1292,11 @@ def run_collection_once() -> pd.DataFrame:
             method="multi"
         )
         logging.info(f"Inserted {len(df)} rows into PostgreSQL")
-    except Exception as e:
-        logging.error(f"DB INSERT FAILED: {e}")
 
+    except Exception as e:
+        import traceback
+        logging.error("DB INSERT FAILED:")
+        logging.error(traceback.format_exc())
     # df.to_sql(
     # "planet_history",
     # engine,
