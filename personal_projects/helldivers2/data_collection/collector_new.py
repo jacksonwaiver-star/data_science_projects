@@ -1231,8 +1231,6 @@ def run_collection_once() -> pd.DataFrame:
         int(row["planet_index"]): str(row["currentOwner"])
         for _, row in df.iterrows()
     }
-    import logging
-    logging.basicConfig(level=logging.INFO)
 
     logging.info(f"MAJOR ORDER ID IS {major_order_id}")
     print("MAJOR ORDER ID IS " + str(major_order_id))
