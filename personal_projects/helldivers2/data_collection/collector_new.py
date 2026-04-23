@@ -1098,6 +1098,9 @@ def get_major_order_planet_indexes(major_order_payload: list[dict[str, Any]]) ->
 
     # 🔥 LOOP ALL MAJOR ORDERS (not just [0])
     for order in major_order_payload:
+        # 🔥 FILTER: only real major orders
+        if order.get("setting", {}).get("overrideTitle") != "MAJOR ORDER":
+            continue
         tasks = order.get("setting", {}).get("tasks", [])
 
         for task in tasks:
@@ -1167,7 +1170,13 @@ def run_collection_once() -> pd.DataFrame:
     )
     assignments = fetch_json(f"{BASE_URL}/v1/assignments", headers=headers)
     dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
-
+    strategic_opportunity_exists = False
+    # Check if any major order has the overrideTitle "STRATEGIC OPPORTUNITY"
+    if isinstance(major_order_raw, list):
+        for order in major_order_raw:
+            if order.get("setting", {}).get("overrideTitle") == "STRATEGIC OPPORTUNITY":
+                strategic_opportunity_exists = True
+                break
 
     major_order_planet_indexes = get_major_order_planet_indexes(major_order_raw)
     #below gets the major order id
@@ -1219,6 +1228,7 @@ def run_collection_once() -> pd.DataFrame:
         )
 
     df = pd.DataFrame(planet_rows)
+    df["strategic_opportunity"] = "T" if strategic_opportunity_exists else "F"
     df["major_order_dispatch"] = major_order_dispatch
     #major_order_id = major_order_raw[0]["id32"] if major_order_raw else -1
     if isinstance(major_order_raw, list) and len(major_order_raw) > 0:
