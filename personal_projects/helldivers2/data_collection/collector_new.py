@@ -772,7 +772,7 @@ def fetch_json(
     url: str,
     headers: dict[str, str],
     timeout: int = 30,
-    max_retries: int = 3,
+    max_retries: int = 5,
     backoff_seconds: float = 30.0,
 ) -> Any:
     for attempt in range(1, max_retries + 1):
