@@ -1145,6 +1145,9 @@ def get_major_order_mapping(major_order_payload):
     orders = major_order_payload if isinstance(major_order_payload, list) else [major_order_payload]
 
     for order in orders:
+        if order.get("setting", {}).get("overrideTitle") != "MAJOR ORDER":
+            continue
+        # ✅ FIX: define order_id here
         order_id = order.get("id32", -1)
         tasks = order.get("setting", {}).get("tasks", [])
 
@@ -1170,24 +1173,47 @@ def run_collection_once() -> pd.DataFrame:
     )
     assignments = fetch_json(f"{BASE_URL}/v1/assignments", headers=headers)
     dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
+
+    import re
+
     strategic_opportunity_exists = False
     strategic_opportunity_desc = None
-    # Check if any major order has the overrideTitle "STRATEGIC OPPORTUNITY"
+    strategic_start_time = None
+    strategic_expires_in = None
+    strategic_enemy = None
+
+    major_order_start_time = None
+    major_order_expires_in = None
+
     if isinstance(major_order_raw, list):
         for order in major_order_raw:
-            if order.get("setting", {}).get("overrideTitle") == "STRATEGIC OPPORTUNITY":
+            title = order.get("setting", {}).get("overrideTitle")
+
+            # ✅ Strategic Opportunity
+            if title == "STRATEGIC OPPORTUNITY":
                 strategic_opportunity_exists = True
                 strategic_opportunity_desc = order.get("setting", {}).get("overrideBrief")
-                break
+                strategic_start_time = order.get("startTime")
+                strategic_expires_in = order.get("expiresIn")
 
+            # ✅ Major Order
+            elif title == "MAJOR ORDER":
+                major_order_start_time = order.get("startTime")
+                major_order_expires_in = order.get("expiresIn")
+
+    # 🔥 NOW run regex (after description exists)
+    if strategic_opportunity_desc:
+        match = re.search(r"Eliminate.*?of (.+?) in order", strategic_opportunity_desc)
+        if match:
+            strategic_enemy = match.group(1)
     major_order_planet_indexes = get_major_order_planet_indexes(major_order_raw)
-    #below gets the major order id
+        #below gets the major order id
     planet_to_order = get_major_order_mapping(major_order_raw)
-    
+        
     major_order_dispatch = (
-            assignments[0].get("briefing", "NONE")
-            if isinstance(assignments, list) and assignments
-            else "NONE"
+                assignments[0].get("briefing", "NONE")
+                if isinstance(assignments, list) and assignments
+                else "NONE"
         )
     dss_planet_orbited = (
         dss[0].get("planet", {}).get("name")
@@ -1232,12 +1258,29 @@ def run_collection_once() -> pd.DataFrame:
     df = pd.DataFrame(planet_rows)
     df["strategic_opportunity"] = "T" if strategic_opportunity_exists else "F"
     df["strategic_opportunity_desc"] = strategic_opportunity_desc
+    df["strategic_enemy"] = strategic_enemy
     df["major_order_dispatch"] = major_order_dispatch
-    #major_order_id = major_order_raw[0]["id32"] if major_order_raw else -1
-    if isinstance(major_order_raw, list) and len(major_order_raw) > 0:
-        major_order_id = major_order_raw[0].get("id32", -1)
+    df["strategic_start_time"] = strategic_start_time
+    df["strategic_expires_in"] = strategic_expires_in
+    df["major_order_time_remaining_hours"] = major_order_expires_in / 3600 if major_order_expires_in else None
+    df["major_order_start_time"] = major_order_start_time
+    df["major_order_expires_in"] = major_order_expires_in
+    from datetime import datetime, timedelta
+
+    if strategic_expires_in:
+        strategic_end_time = datetime.now() + timedelta(seconds=strategic_expires_in)
     else:
-        major_order_id = -1
+        strategic_end_time = None
+
+    df["strategic_end_time"] = strategic_end_time
+    #major_order_id = major_order_raw[0]["id32"] if major_order_raw else -1
+    major_order_id = -1
+
+    if isinstance(major_order_raw, list):
+        for order in major_order_raw:
+            if order.get("setting", {}).get("overrideTitle") == "MAJOR ORDER":
+                major_order_id = order.get("id32", -1)
+                break
     df["major_order_id"] = major_order_id
     #df["major_order_id"] = df["planet_index"].map(planet_to_order).fillna(-1).astype(int)
     owner_by_index = {
