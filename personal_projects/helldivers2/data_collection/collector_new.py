@@ -1345,6 +1345,20 @@ def run_collection_once() -> pd.DataFrame:
     df["CST_H_M_S"] = now.strftime("%H:%M:%S")
     df["timestamp"] = now
 
+    def get_missing_columns(df, engine):
+    #import pandas as pd
+    
+        query = """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'planet_history'
+        """
+        
+        existing = pd.read_sql(query, engine)["column_name"].tolist()
+        df_cols = df.columns.tolist()
+        
+        missing = [col for col in df_cols if col not in existing]
+        return missing
 
 
     #BELOW IS FOR SAVING TO LOCAL CSV
@@ -1359,6 +1373,8 @@ def run_collection_once() -> pd.DataFrame:
 
     #END OF CSV ADDING DATA
 
+    missing = get_missing_columns(df, engine)
+    print("Missing columns:", missing)
     #below is for saving to data postgres
 
     for i, row in df.iterrows():
