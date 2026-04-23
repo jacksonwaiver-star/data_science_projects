@@ -1275,7 +1275,7 @@ def run_collection_once() -> pd.DataFrame:
         major_order_end_time = None
 
     df["major_order_end_time"] = major_order_end_time
-    from datetime import datetime, timedelta
+    
 
     if strategic_expires_in:
         strategic_end_time = datetime.now() + timedelta(seconds=strategic_expires_in)
