@@ -16,6 +16,8 @@ from pandas.errors import EmptyDataError
 
 from sqlalchemy import create_engine
 import os
+import re
+from datetime import datetime, timedelta
 
 #from asyncio import graph
 
@@ -1174,8 +1176,6 @@ def run_collection_once() -> pd.DataFrame:
     assignments = fetch_json(f"{BASE_URL}/v1/assignments", headers=headers)
     dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
 
-    import re
-
     strategic_opportunity_exists = False
     strategic_opportunity_desc = None
     strategic_start_time = None
@@ -1184,6 +1184,7 @@ def run_collection_once() -> pd.DataFrame:
 
     major_order_start_time = None
     major_order_expires_in = None
+    strategic_opportunity_id = None
 
     if isinstance(major_order_raw, list):
         for order in major_order_raw:
@@ -1267,6 +1268,7 @@ def run_collection_once() -> pd.DataFrame:
     df["major_order_start_time"] = major_order_start_time
     df["major_order_expires_in"] = major_order_expires_in
     df["strategic_opportunity_id"] = strategic_opportunity_id
+
     if major_order_expires_in:
         major_order_end_time = datetime.now() + timedelta(seconds=major_order_expires_in)
     else:
@@ -1281,12 +1283,6 @@ def run_collection_once() -> pd.DataFrame:
         strategic_end_time = None
 
     df["strategic_end_time"] = strategic_end_time
-    if major_order_expires_in:
-        major_order_end_time = datetime.now() + timedelta(seconds=major_order_expires_in)
-    else:
-        major_order_end_time = None
-
-    df["major_order_end_time"] = major_order_end_time
     #major_order_id = major_order_raw[0]["id32"] if major_order_raw else -1
     major_order_id = -1
 
