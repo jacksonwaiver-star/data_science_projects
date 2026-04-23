@@ -1295,21 +1295,34 @@ def run_collection_once() -> pd.DataFrame:
 
     #below is for saving to data postgres
 
+    for i, row in df.iterrows():
+        try:
+            pd.DataFrame([row]).to_sql(
+                "planet_history",
+                engine,
+                if_exists="append",
+                index=False
+            )
+        except Exception as e:
+            print("FAILED ROW:")
+            print(row)
+            print(e)
+            break
 
-    try:
-        df.to_sql(
-            "planet_history",
-            engine,
-            if_exists="append",
-            index=False,
-            method="multi"
-        )
-        logging.info(f"Inserted {len(df)} rows into PostgreSQL")
+    # try:
+    #     df.to_sql(
+    #         "planet_history",
+    #         engine,
+    #         if_exists="append",
+    #         index=False,
+    #         method="none"
+    #     )
+    #     logging.info(f"Inserted {len(df)} rows into PostgreSQL")
 
-    except Exception as e:
-        import traceback
-        logging.error("DB INSERT FAILED:")
-        logging.error(traceback.format_exc())
+    # except Exception as e:
+    #     import traceback
+    #     logging.error("DB INSERT FAILED:")
+    #     logging.error(traceback.format_exc())
     # df.to_sql(
     # "planet_history",
     # engine,
