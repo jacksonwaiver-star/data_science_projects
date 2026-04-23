@@ -1375,21 +1375,32 @@ def run_collection_once() -> pd.DataFrame:
 
     missing = get_missing_columns(df, engine)
     print("Missing columns:", missing)
-    #below is for saving to data postgres
 
-    for i, row in df.iterrows():
-        try:
-            pd.DataFrame([row]).to_sql(
-                "planet_history",
-                engine,
-                if_exists="append",
-                index=False
-            )
-        except Exception as e:
-            print("FAILED ROW:")
-            print(row)
-            print(e)
-            break
+    #below is for when server is acting as should be
+    df.to_sql(
+    "planet_history",
+    engine,
+    if_exists="append",
+    index=False,
+    method="multi",   # 🔥 THIS is the key
+    chunksize=1000    # optional but recommended
+    )
+
+    #below is for saving to db when server is being weird - inserts one by one to isolate bad rows
+
+    # for i, row in df.iterrows():
+    #     try:
+    #         pd.DataFrame([row]).to_sql(
+    #             "planet_history",
+    #             engine,
+    #             if_exists="append",
+    #             index=False
+    #         )
+    #     except Exception as e:
+    #         print("FAILED ROW:")
+    #         print(row)
+    #         print(e)
+    #         break
 
     # try:
     #     df.to_sql(
