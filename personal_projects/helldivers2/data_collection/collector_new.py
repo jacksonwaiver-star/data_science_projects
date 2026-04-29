@@ -726,6 +726,20 @@ def apply_manual_edges(G: nx.Graph, name_to_index: dict[str, int]) -> int:
     #CONNECT EVERYTHING TO NEW STOCKHOLM
     add_edge_by_name(G,"NEW STOCKHOLM", "IRO", name_to_index)
 
+    #below is after new biome update
+
+    #connect everything to Brilliance
+    add_edge_by_name(G,"Brilliance", "TERREK", name_to_index)
+    add_edge_by_name(G,"Brilliance", "HEETH", name_to_index)
+
+    #connnect everything to Luxuriant
+    add_edge_by_name(G,"Luxuriant", "GATRIA", name_to_index)
+    add_edge_by_name(G,"Luxuriant", "PEACOCK", name_to_index)
+
+    #connect everything to Big Rock
+    add_edge_by_name(G,"Big Rock", "OVERGOE PRIME", name_to_index)
+    add_edge_by_name(G,"Big Rock", "PEACOCK", name_to_index)
+
     return skipped_edges
 
 
