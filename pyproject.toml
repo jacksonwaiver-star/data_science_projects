@@ -1,0 +1,7 @@
+[project]
+name = "helldivers2"
+version = "0.1.0"
+
+[tool.setuptools.packages.find]
+where = ["personal_projects"]
+include = ["helldivers2*"]
