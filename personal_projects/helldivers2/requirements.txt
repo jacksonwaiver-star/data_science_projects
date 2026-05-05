@@ -4,3 +4,6 @@ requests
 networkx
 sqlalchemy
 psycopg2-binary
+fastapi
+uvicorn
+joblib
