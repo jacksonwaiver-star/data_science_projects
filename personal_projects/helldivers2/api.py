@@ -50,7 +50,13 @@ app = FastAPI()
 # =========================
 # LOAD MODEL
 # =========================
-model = joblib.load("modeling/delta_model.pkl")
+model = None
+
+try:
+    model = joblib.load("modeling/delta_model.pkl")
+except Exception as e:
+    print(f"Model failed to load: {e}")
+# model = joblib.load("modeling/delta_model.pkl")
 
 # =========================
 # HELPER: FEATURE CREATION
