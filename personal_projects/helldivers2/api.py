@@ -686,7 +686,11 @@ def top_planets(limit: int = 10):
             "in_major_order": row["in_major_order"],
             "sector": row["sector"],
             "strategic_opportunity": row["strategic_opportunity"],
-            "possible_paths_to_major_order": row["possible_paths_to_major_order"]
+            "possible_paths_to_major_order": (
+        "T"
+        if bool(row["possible_paths_to_major_order"])
+        else "F"
+        )   
         })
 
     return {
