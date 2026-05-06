@@ -654,7 +654,7 @@ def top_planets(limit: int = 10):
         SELECT
             name,
             player_on_planet,
-            currentOwner,
+            "currentOwner",
             in_major_order,
             sector,
             timestamp
