@@ -10,3 +10,4 @@ joblib
 python-dotenv
 scikit-learn
 xgboost
+plotly
