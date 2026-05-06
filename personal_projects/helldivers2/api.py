@@ -460,10 +460,40 @@ def major_order_status():
     }
 }
     
-@app.get("/major-order-history")
-def major_order_history(hours: int = 48):
+@app.get("/major-order-history-by-day")
+def major_order_history_by_day(days_ago: int = 5):
 
-    query = f"""
+    # -------------------------
+    # FIND TARGET MAJOR ORDER
+    # -------------------------
+    major_order_query = f"""
+        SELECT
+            major_order_id,
+            major_order_dispatch,
+            timestamp
+
+        FROM planet_history
+
+        WHERE timestamp <= NOW() - INTERVAL '{days_ago} days'
+            AND major_order_id IS NOT NULL
+
+        ORDER BY timestamp DESC
+
+        LIMIT 1
+    """
+
+    mo_df = pd.read_sql(major_order_query, engine)
+
+    if mo_df.empty:
+        return {"error": "No major order found for requested date"}
+
+    target_major_order_id = mo_df.iloc[0]["major_order_id"]
+    dispatch = mo_df.iloc[0]["major_order_dispatch"]
+
+    # -------------------------
+    # GET HISTORY FOR ONLY THAT MO
+    # -------------------------
+    history_query = f"""
         SELECT
             timestamp,
 
@@ -487,28 +517,20 @@ def major_order_history(hours: int = 48):
 
         FROM planet_history
 
+        WHERE major_order_id = {int(target_major_order_id)}
+
         GROUP BY timestamp
 
-        ORDER BY timestamp DESC
-
-        LIMIT {hours}
+        ORDER BY timestamp
     """
 
-    df = pd.read_sql(query, engine)
+    df = pd.read_sql(history_query, engine)
 
     if df.empty:
-        return {"error": "No historical data found"}
-
-    # chronological order for charts
-    df = df.sort_values("timestamp")
+        return {"error": "No history found for this major order"}
 
     # -------------------------
-    # DATA QUALITY STATUS
-    # -------------------------
-    status = detect_data_issue(df)
-
-    # -------------------------
-    # RATIO
+    # MAJOR ORDER RATIO
     # -------------------------
     df["major_order_ratio"] = (
         df["players_in_major_order"] /
@@ -516,7 +538,7 @@ def major_order_history(hours: int = 48):
     ).fillna(0)
 
     # -------------------------
-    # RESPONSE FORMAT
+    # BUILD RESPONSE
     # -------------------------
     history = []
 
@@ -531,15 +553,14 @@ def major_order_history(hours: int = 48):
         })
 
     return {
-        "server_health": {
-            "status": status
-        },
+        "query_days_ago": days_ago,
 
-        "hours_requested": hours,
+        "major_order_id": int(target_major_order_id),
+
+        "major_order_dispatch": dispatch,
 
         "history": history
     }
-
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
 
