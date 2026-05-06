@@ -194,6 +194,50 @@ def fetch_recent_data(limit=500):
 
     return df
 
+@app.get("/health")
+def health():
+
+    # -------------------------
+    # MODEL STATUS
+    # -------------------------
+    model_loaded = model is not None
+
+    # -------------------------
+    # DATABASE STATUS
+    # -------------------------
+    db_status = "offline"
+    latest_timestamp = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT MAX(timestamp)
+            FROM planet_history
+        """)
+
+        latest_timestamp = cur.fetchone()[0]
+
+        cur.close()
+        conn.close()
+
+        db_status = "connected"
+
+    except Exception as e:
+        print("HEALTH DB ERROR:", e)
+
+    # -------------------------
+    # API RESPONSE
+    # -------------------------
+    return {
+        "api": "online",
+        "database": db_status,
+        "model_loaded": model_loaded,
+        "latest_data_timestamp": latest_timestamp
+    }
+
+
 @app.get("/predict-live")
 def predict_live():
 
