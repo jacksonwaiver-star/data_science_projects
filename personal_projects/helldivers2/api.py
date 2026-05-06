@@ -135,14 +135,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_connection():
-    return psycopg2.connect(
-        host=os.getenv("PGHOST"),
-        port=os.getenv("PGPORT"),
-        database=os.getenv("PGDATABASE"),
-        user=os.getenv("PGUSER"),
-        password=os.getenv("PGPASSWORD"),
-        sslmode="require"
-    )
+    # return psycopg2.connect(
+    #     host=os.getenv("PGHOST"),
+    #     port=os.getenv("PGPORT"),
+    #     database=os.getenv("PGDATABASE"),
+    #     user=os.getenv("PGUSER"),
+    #     password=os.getenv("PGPASSWORD"),
+    #     sslmode="require"
+    # )
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 # 🔥 ADD IT RIGHT HERE
 def insert_prediction(current_players, predicted, delta, status):
