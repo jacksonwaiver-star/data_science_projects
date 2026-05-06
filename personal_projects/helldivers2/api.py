@@ -693,6 +693,46 @@ def top_planets(limit: int = 10):
         "top_planets": planets
     }
 
+@app.get("/faction-summary")
+def faction_summary():
+
+    query = """
+        SELECT
+            "currentOwner",
+            SUM(player_on_planet) as total_players
+        FROM planet_history
+        WHERE timestamp = (
+            SELECT MAX(timestamp)
+            FROM planet_history
+        )
+        GROUP BY "currentOwner"
+        ORDER BY total_players DESC
+    """
+
+    df = pd.read_sql(query, engine)
+
+    status = detect_data_issue(
+        df.rename(columns={
+            "total_players": "total_players"
+        })
+    )
+
+    factions = []
+
+    for _, row in df.iterrows():
+
+        factions.append({
+            "faction": row["currentOwner"],
+            "players": int(row["total_players"])
+        })
+
+    return {
+        "server_health": {
+            "status": status
+        },
+
+        "factions": factions
+    }
 
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
