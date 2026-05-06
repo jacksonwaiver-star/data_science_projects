@@ -561,6 +561,93 @@ def major_order_history_by_day(days_ago: int = 5):
 
         "history": history
     }
+    
+    
+@app.get("/forecast-24h")
+def forecast_24h():
+
+    if model is None:
+        return {"error": "Model not loaded"}
+
+    # -------------------------
+    # FETCH RECENT DATA
+    # -------------------------
+    df = fetch_recent_data(limit=600)
+
+    df = create_features(df)
+
+    if df.empty:
+        return {"error": "Not enough historical data"}
+
+    # -------------------------
+    # DATA HEALTH CHECK
+    # -------------------------
+    status = detect_data_issue(df)
+
+    if status != "ok":
+        return {
+            "server_health": {
+                "status": status,
+                "warning": "Forecast disabled due to unreliable live data"
+            }
+        }
+
+    # -------------------------
+    # START RECURSIVE FORECAST
+    # -------------------------
+    working_df = df.copy()
+
+    forecasts = []
+
+    for step in range(1, 25):
+
+        latest_row = working_df.iloc[-1:]
+
+        X = latest_row[FEATURES]
+
+        delta_pred = model.predict(X)[0]
+
+        current_players = latest_row["total_players"].values[0]
+
+        next_players = current_players + delta_pred
+
+        next_timestamp = (
+            pd.to_datetime(latest_row["timestamp"].values[0])
+            + pd.Timedelta(hours=1)
+        )
+
+        forecasts.append({
+            "hour_ahead": step,
+            "timestamp": str(next_timestamp),
+            "predicted_players": int(next_players)
+        })
+
+        # -------------------------
+        # APPEND PREDICTED ROW
+        # -------------------------
+        new_row = pd.DataFrame([{
+            "timestamp": next_timestamp,
+            "total_players": next_players
+        }])
+
+        working_df = pd.concat(
+            [working_df[["timestamp", "total_players"]], new_row],
+            ignore_index=True
+        )
+
+        working_df = create_features(working_df)
+
+    return {
+        "server_health": {
+            "status": status
+        },
+
+        "forecast_horizon_hours": 24,
+
+        "forecast": forecasts
+    }
+    
+    
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
 
