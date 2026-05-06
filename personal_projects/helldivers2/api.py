@@ -432,14 +432,16 @@ def major_order_status():
     # RESPONSE
     # -------------------------
     return {
-        "server_status": status,
-
+    "server_health": {
+        "status": status,
         "warning": (
             "Current data likely incomplete due to missing planets/API issues"
             if status == "likely_missing_planets"
             else None
-        ),
+        )
+    },
 
+    "major_order_data": {
         "timestamp": str(latest["timestamp"]),
 
         "major_order_id": (
@@ -456,6 +458,7 @@ def major_order_status():
 
         "major_order_ratio": round(float(mo_ratio), 3)
     }
+}
     
     
 def detect_data_issue(df):
