@@ -647,7 +647,53 @@ def forecast_24h():
         "forecast": forecasts
     }
     
-    
+@app.get("/top-planets")
+def top_planets(limit: int = 10):
+
+    query = f"""
+        SELECT
+            name,
+            player_on_planet,
+            currentOwner,
+            in_major_order,
+            sector,
+            timestamp
+        FROM planet_history
+        WHERE timestamp = (
+            SELECT MAX(timestamp)
+            FROM planet_history
+        )
+        ORDER BY player_on_planet DESC
+        LIMIT {limit}
+    """
+
+    df = pd.read_sql(query, engine)
+
+    status = detect_data_issue(df.rename(columns={
+        "player_on_planet": "total_players"
+    }))
+
+    planets = []
+
+    for _, row in df.iterrows():
+
+        planets.append({
+            "planet": row["name"],
+            "players": int(row["player_on_planet"]),
+            "owner": row["currentOwner"],
+            "in_major_order": row["in_major_order"],
+            "sector": row["sector"]
+        })
+
+    return {
+        "server_health": {
+            "status": status
+        },
+
+        "top_planets": planets
+    }
+
+
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
 
