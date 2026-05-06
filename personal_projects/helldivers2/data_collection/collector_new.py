@@ -1194,7 +1194,7 @@ def run_collection_once() -> pd.DataFrame:
     #start of edited
     # DSS endpoint is optional
     try:
-        dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
+        dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers, max_retries=3, backoff_seconds=2)
 
         dss_planet_orbited = (
             dss[0].get("planet", {}).get("name")
