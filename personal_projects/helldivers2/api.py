@@ -292,32 +292,88 @@ def predict_live():
     }
     
 #major order stats
+# @app.get("/major-order-status")
+# def major_order_status():
+
+#     query = """
+#         SELECT
+#             timestamp,
+#             major_order_id,
+#             major_order_dispatch,
+
+#             SUM(
+#                 CASE
+#                     WHEN in_major_order = 'T'
+#                     THEN player_on_planet
+#                     ELSE 0
+#                 END
+#             ) AS players_in_major_order,
+
+#             SUM(
+#                 CASE
+#                     WHEN in_major_order != 'T'
+#                     THEN player_on_planet
+#                     ELSE 0
+#                 END
+#             ) AS players_outside_major_order,
+
+#             SUM(player_on_planet) AS total_players
+
+#         FROM planet_history
+
+#         WHERE timestamp = (
+#             SELECT MAX(timestamp)
+#             FROM planet_history
+#         )
+
+#         GROUP BY
+#             timestamp,
+#             major_order_id,
+#             major_order_dispatch
+#     """
+
+#     df = pd.read_sql(query, engine)
+
+#     if df.empty:
+#         return {"error": "No major order data found"}
+
+#     row = df.iloc[0]
+
+#     players_in = float(row["players_in_major_order"])
+#     players_out = float(row["players_outside_major_order"])
+#     total_players = float(row["total_players"])
+
+#     mo_ratio = (
+#         players_in / total_players
+#         if total_players > 0
+#         else 0
+#     )
+
+#     return {
+#         "timestamp": str(row["timestamp"]),
+#         "major_order_id": int(row["major_order_id"]) if pd.notna(row["major_order_id"]) else None,
+#         "major_order_dispatch": row["major_order_dispatch"],
+
+#         "players_in_major_order": players_in,
+#         "players_outside_major_order": players_out,
+#         "total_players": total_players,
+
+#         "major_order_ratio": round(mo_ratio, 3)
+#     }
+
 @app.get("/major-order-status")
 def major_order_status():
 
+    # -------------------------
+    # FETCH CURRENT SNAPSHOT
+    # -------------------------
     query = """
         SELECT
             timestamp,
             major_order_id,
             major_order_dispatch,
-
-            SUM(
-                CASE
-                    WHEN in_major_order = 'T'
-                    THEN player_on_planet
-                    ELSE 0
-                END
-            ) AS players_in_major_order,
-
-            SUM(
-                CASE
-                    WHEN in_major_order != 'T'
-                    THEN player_on_planet
-                    ELSE 0
-                END
-            ) AS players_outside_major_order,
-
-            SUM(player_on_planet) AS total_players
+            in_major_order,
+            player_on_planet
 
         FROM planet_history
 
@@ -325,11 +381,6 @@ def major_order_status():
             SELECT MAX(timestamp)
             FROM planet_history
         )
-
-        GROUP BY
-            timestamp,
-            major_order_id,
-            major_order_dispatch
     """
 
     df = pd.read_sql(query, engine)
@@ -337,11 +388,37 @@ def major_order_status():
     if df.empty:
         return {"error": "No major order data found"}
 
-    row = df.iloc[0]
+    # -------------------------
+    # DATA QUALITY STATUS
+    # -------------------------
+    total_players = df["player_on_planet"].sum()
 
-    players_in = float(row["players_in_major_order"])
-    players_out = float(row["players_outside_major_order"])
-    total_players = float(row["total_players"])
+    historical_query = """
+        SELECT
+            timestamp,
+            SUM(player_on_planet) AS total_players
+        FROM planet_history
+        GROUP BY timestamp
+        ORDER BY timestamp
+        LIMIT 1000
+    """
+
+    hist_df = pd.read_sql(historical_query, engine)
+
+    status = detect_data_issue(hist_df)
+
+    # -------------------------
+    # MAJOR ORDER METRICS
+    # -------------------------
+    players_in = df.loc[
+        df["in_major_order"] == "T",
+        "player_on_planet"
+    ].sum()
+
+    players_out = df.loc[
+        df["in_major_order"] != "T",
+        "player_on_planet"
+    ].sum()
 
     mo_ratio = (
         players_in / total_players
@@ -349,16 +426,35 @@ def major_order_status():
         else 0
     )
 
+    latest = df.iloc[0]
+
+    # -------------------------
+    # RESPONSE
+    # -------------------------
     return {
-        "timestamp": str(row["timestamp"]),
-        "major_order_id": int(row["major_order_id"]) if pd.notna(row["major_order_id"]) else None,
-        "major_order_dispatch": row["major_order_dispatch"],
+        "server_status": status,
 
-        "players_in_major_order": players_in,
-        "players_outside_major_order": players_out,
-        "total_players": total_players,
+        "warning": (
+            "Current data likely incomplete due to missing planets/API issues"
+            if status == "likely_missing_planets"
+            else None
+        ),
 
-        "major_order_ratio": round(mo_ratio, 3)
+        "timestamp": str(latest["timestamp"]),
+
+        "major_order_id": (
+            int(latest["major_order_id"])
+            if pd.notna(latest["major_order_id"])
+            else None
+        ),
+
+        "major_order_dispatch": latest["major_order_dispatch"],
+
+        "players_in_major_order": int(players_in),
+        "players_outside_major_order": int(players_out),
+        "total_players": int(total_players),
+
+        "major_order_ratio": round(float(mo_ratio), 3)
     }
     
     
