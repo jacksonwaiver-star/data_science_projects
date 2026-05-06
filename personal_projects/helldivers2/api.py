@@ -291,6 +291,77 @@ def predict_live():
         "source": "postgres"
     }
     
+#major order stats
+@app.get("/major-order-status")
+def major_order_status():
+
+    query = """
+        SELECT
+            timestamp,
+            major_order_id,
+            major_order_dispatch,
+
+            SUM(
+                CASE
+                    WHEN in_major_order = 'T'
+                    THEN player_on_planet
+                    ELSE 0
+                END
+            ) AS players_in_major_order,
+
+            SUM(
+                CASE
+                    WHEN in_major_order != 'T'
+                    THEN player_on_planet
+                    ELSE 0
+                END
+            ) AS players_outside_major_order,
+
+            SUM(player_on_planet) AS total_players
+
+        FROM planet_history
+
+        WHERE timestamp = (
+            SELECT MAX(timestamp)
+            FROM planet_history
+        )
+
+        GROUP BY
+            timestamp,
+            major_order_id,
+            major_order_dispatch
+    """
+
+    df = pd.read_sql(query, engine)
+
+    if df.empty:
+        return {"error": "No major order data found"}
+
+    row = df.iloc[0]
+
+    players_in = float(row["players_in_major_order"])
+    players_out = float(row["players_outside_major_order"])
+    total_players = float(row["total_players"])
+
+    mo_ratio = (
+        players_in / total_players
+        if total_players > 0
+        else 0
+    )
+
+    return {
+        "timestamp": str(row["timestamp"]),
+        "major_order_id": int(row["major_order_id"]) if pd.notna(row["major_order_id"]) else None,
+        "major_order_dispatch": row["major_order_dispatch"],
+
+        "players_in_major_order": players_in,
+        "players_outside_major_order": players_out,
+        "total_players": total_players,
+
+        "major_order_ratio": round(mo_ratio, 3)
+    }
+    
+    
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
 
