@@ -796,7 +796,7 @@ def fetch_json(
             response = requests.get(
             url,
             headers=headers,
-            timeout=(10, 90)  # (connect timeout, read timeout)
+            timeout=(15, 60)  # (connect timeout, read timeout)
             )
             status = response.status_code
             if status in (429, 500, 502, 503, 504):
@@ -1189,8 +1189,28 @@ def run_collection_once() -> pd.DataFrame:
         headers=headers,
     )
     assignments = fetch_json(f"{BASE_URL}/v1/assignments", headers=headers)
-    dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
+    #dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
 
+    #start of edited
+    # DSS endpoint is optional
+    try:
+        dss = fetch_json(f"{BASE_URL}/v2/space-stations", headers=headers)
+
+        dss_planet_orbited = (
+            dss[0].get("planet", {}).get("name")
+            if isinstance(dss, list) and dss
+            else None
+        )
+
+    except Exception as e:
+        logging.warning(f"DSS endpoint failed: {e}")
+
+        dss = None
+        dss_planet_orbited = None
+    
+    #end of edited
+    
+    
     strategic_opportunity_exists = False
     strategic_opportunity_desc = None
     strategic_start_time = None
@@ -1353,7 +1373,18 @@ def run_collection_once() -> pd.DataFrame:
         & (df["planet_index"].isin(major_order_planet_indexes))
     ).map({True: "T", False: "F"})
 
-    df["DSS_present"] = (df["name"] == dss_planet_orbited).map({True: "T", False: "F"})
+    #df["DSS_present"] = (df["name"] == dss_planet_orbited).map({True: "T", False: "F"})
+
+    #start of edit
+    
+    if dss_planet_orbited is None:
+        df["DSS_present"] = None
+    else:
+        df["DSS_present"] = (
+            df["name"] == dss_planet_orbited
+        ).map({True: "T", False: "F"})
+    
+    #end of edited
 
     now = datetime.now()
     df["Y-M-D"] = now.strftime("%Y-%m-%d")
