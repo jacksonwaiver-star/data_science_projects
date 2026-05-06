@@ -733,6 +733,107 @@ def faction_summary():
 
         "factions": factions
     }
+    
+    
+@app.get("/forecast-vs-actual")
+def forecast_vs_actual(history_hours: int = 24):
+
+    if model is None:
+        return {"error": "Model not loaded"}
+
+    # -------------------------
+    # FETCH HISTORICAL DATA
+    # -------------------------
+    historical_df = fetch_recent_data(limit=600)
+
+    historical_df = historical_df.sort_values("timestamp")
+
+    actual_df = historical_df.tail(history_hours).copy()
+
+    # -------------------------
+    # FEATURE ENGINEERING
+    # -------------------------
+    working_df = create_features(historical_df.copy())
+
+    if working_df.empty:
+        return {"error": "Not enough historical data"}
+
+    status = detect_data_issue(working_df)
+
+    if status != "ok":
+        return {
+            "server_health": {
+                "status": status
+            }
+        }
+
+    # -------------------------
+    # FORECAST
+    # -------------------------
+    forecasts = []
+
+    for step in range(1, 25):
+
+        latest_row = working_df.iloc[-1:]
+
+        X = latest_row[FEATURES]
+
+        delta_pred = model.predict(X)[0]
+
+        current_players = latest_row["total_players"].values[0]
+
+        next_players = current_players + delta_pred
+
+        next_timestamp = (
+            pd.to_datetime(latest_row["timestamp"].values[0])
+            + pd.Timedelta(hours=1)
+        )
+
+        forecasts.append({
+            "timestamp": str(next_timestamp),
+            "players": float(next_players),
+            "type": "Forecast"
+        })
+
+        # append recursive prediction
+        new_row = pd.DataFrame([{
+            "timestamp": next_timestamp,
+            "total_players": next_players
+        }])
+
+        temp_df = pd.concat(
+            [
+                working_df[["timestamp", "total_players"]],
+                new_row
+            ],
+            ignore_index=True
+        )
+
+        working_df = create_features(temp_df)
+
+    # -------------------------
+    # ACTUAL DATA
+    # -------------------------
+    actuals = []
+
+    for _, row in actual_df.iterrows():
+
+        actuals.append({
+            "timestamp": str(row["timestamp"]),
+            "players": float(row["total_players"]),
+            "type": "Actual"
+        })
+
+    # -------------------------
+    # RETURN COMBINED
+    # -------------------------
+    return {
+        "server_health": {
+            "status": status
+        },
+
+        "data": actuals + forecasts
+    }
 
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
