@@ -226,7 +226,11 @@ def predict_live():
     # MODEL PREDICTION
     # -------------------------
     X = latest_row[FEATURES]
-
+    #make sure the model is loaded before trying to predict
+    if model is None:
+        return {
+            "error": "Model not loaded"
+        }
     delta_pred = model.predict(X)[0]
 
     prediction = current_players + delta_pred
