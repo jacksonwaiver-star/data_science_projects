@@ -685,8 +685,8 @@ def top_planets(limit: int = 10):
             "owner": row["currentOwner"],
             "in_major_order": row["in_major_order"],
             "sector": row["sector"],
-            "strategic_opportunity": "Strategic Opportunity",
-            "possible_paths_to_major_order": "Possible Paths To MO",
+            "strategic_opportunity": row["strategic_opportunity"],
+            "possible_paths_to_major_order": row["possible_paths_to_major_order"]
         })
 
     return {
