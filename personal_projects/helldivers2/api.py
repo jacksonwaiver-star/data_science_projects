@@ -460,7 +460,86 @@ def major_order_status():
     }
 }
     
-    
+@app.get("/major-order-history")
+def major_order_history(hours: int = 48):
+
+    query = f"""
+        SELECT
+            timestamp,
+
+            SUM(
+                CASE
+                    WHEN in_major_order = 'T'
+                    THEN player_on_planet
+                    ELSE 0
+                END
+            ) AS players_in_major_order,
+
+            SUM(
+                CASE
+                    WHEN in_major_order != 'T'
+                    THEN player_on_planet
+                    ELSE 0
+                END
+            ) AS players_outside_major_order,
+
+            SUM(player_on_planet) AS total_players
+
+        FROM planet_history
+
+        GROUP BY timestamp
+
+        ORDER BY timestamp DESC
+
+        LIMIT {hours}
+    """
+
+    df = pd.read_sql(query, engine)
+
+    if df.empty:
+        return {"error": "No historical data found"}
+
+    # chronological order for charts
+    df = df.sort_values("timestamp")
+
+    # -------------------------
+    # DATA QUALITY STATUS
+    # -------------------------
+    status = detect_data_issue(df)
+
+    # -------------------------
+    # RATIO
+    # -------------------------
+    df["major_order_ratio"] = (
+        df["players_in_major_order"] /
+        df["total_players"]
+    ).fillna(0)
+
+    # -------------------------
+    # RESPONSE FORMAT
+    # -------------------------
+    history = []
+
+    for _, row in df.iterrows():
+
+        history.append({
+            "timestamp": str(row["timestamp"]),
+            "players_in_major_order": int(row["players_in_major_order"]),
+            "players_outside_major_order": int(row["players_outside_major_order"]),
+            "total_players": int(row["total_players"]),
+            "major_order_ratio": round(float(row["major_order_ratio"]), 3)
+        })
+
+    return {
+        "server_health": {
+            "status": status
+        },
+
+        "hours_requested": hours,
+
+        "history": history
+    }
+
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
 
