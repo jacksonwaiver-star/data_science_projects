@@ -656,6 +656,8 @@ def top_planets(limit: int = 10):
             player_on_planet,
             "currentOwner",
             in_major_order,
+            strategic_opportunity,
+            possible_paths_to_major_order,
             sector,
             timestamp
         FROM planet_history
@@ -682,7 +684,9 @@ def top_planets(limit: int = 10):
             "players": int(row["player_on_planet"]),
             "owner": row["currentOwner"],
             "in_major_order": row["in_major_order"],
-            "sector": row["sector"]
+            "sector": row["sector"],
+            "strategic_opportunity": "Strategic Opportunity",
+            "possible_paths_to_major_order": "Possible Paths To MO",
         })
 
     return {
