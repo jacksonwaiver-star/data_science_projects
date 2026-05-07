@@ -13,3 +13,4 @@ xgboost
 plotly
 cachetools
 slowapi
+streamlit-autorefresh
