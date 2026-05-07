@@ -34,7 +34,9 @@
 
 
 
-from fastapi import FastAPI, HTTPException, Security
+
+from fastapi import FastAPI, HTTPException, Request, Security
+from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 import joblib
 import pandas as pd
@@ -42,11 +44,45 @@ import numpy as np
 from pydantic import BaseModel
 from typing import List
 import os
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from cachetools import TTLCache
 
 class DataPoint(BaseModel):
     timestamp: str
     total_players: float
 app = FastAPI()
+
+summary_cache = TTLCache(maxsize=100, ttl=300)
+
+forecast_cache = TTLCache(maxsize=20, ttl=300)
+
+forecast_vs_actual_cache = TTLCache(maxsize=20, ttl=300)
+
+top_planets_cache = TTLCache(maxsize=50, ttl=120)
+
+major_order_cache = TTLCache(maxsize=20, ttl=300)
+
+total_players_cache = TTLCache(maxsize=20, ttl=60)
+
+major_order_history_cache = TTLCache(maxsize=50, ttl=300)
+
+
+limiter = Limiter(key_func=get_remote_address)
+
+app.state.limiter = limiter
+
+app.add_middleware(SlowAPIMiddleware)
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request, exc):
+    return JSONResponse(
+        status_code=429,
+        content={"error": "Rate limit exceeded"}
+    )
+
 #add API keys for expensive endpoints and to prevent abuse
 API_KEY = os.getenv("API_KEY")
 
@@ -164,26 +200,26 @@ def get_connection():
     return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 # 🔥 ADD IT RIGHT HERE
-def insert_prediction(current_players, predicted, delta, status):
-    query = """
-        INSERT INTO player_predictions (
-            prediction_time,
-            current_players,
-            predicted_next_hour,
-            delta,
-            data_status
-        )
-        VALUES (NOW(), %s, %s, %s, %s)
-    """
+# def insert_prediction(current_players, predicted, delta, status):
+#     query = """
+#         INSERT INTO player_predictions (
+#             prediction_time,
+#             current_players,
+#             predicted_next_hour,
+#             delta,
+#             data_status
+#         )
+#         VALUES (NOW(), %s, %s, %s, %s)
+#     """
 
-    conn = get_connection()
-    cur = conn.cursor()
+#     conn = get_connection()
+#     cur = conn.cursor()
 
-    cur.execute(query, (current_players, predicted, delta, status))
+#     cur.execute(query, (current_players, predicted, delta, status))
 
-    conn.commit()
-    cur.close()
-    conn.close()
+#     conn.commit()
+#     cur.close()
+#     conn.close()
 
 
 from sqlalchemy import create_engine
@@ -191,10 +227,15 @@ import os
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL)
-
+#engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300
+)
 
 def fetch_recent_data(limit=500):
+    limit = min(max(limit, 1), 1000)
     query = f"""
         SELECT 
             timestamp,
@@ -213,7 +254,8 @@ def fetch_recent_data(limit=500):
     return df
 
 @app.get("/health")
-def health():
+@limiter.limit("60/minute")
+def health( request: Request):
 
     # -------------------------
     # MODEL STATUS
@@ -257,7 +299,8 @@ def health():
 
 
 @app.get("/predict-live")
-def predict_live(api_key: str = Security(verify_api_key)):
+@limiter.limit("10/minute")
+def predict_live( request: Request, api_key: str = Security(verify_api_key)):
 
     df = fetch_recent_data(limit=600)
 
@@ -380,8 +423,11 @@ def predict_live(api_key: str = Security(verify_api_key)):
 #     }
 
 @app.get("/major-order-status")
-def major_order_status():
+@limiter.limit("30/minute")
+def major_order_status( request: Request):
 
+    if "major_order_status" in major_order_cache:
+        return major_order_cache["major_order_status"]
     # -------------------------
     # FETCH CURRENT SNAPSHOT
     # -------------------------
@@ -446,41 +492,85 @@ def major_order_status():
 
     latest = df.iloc[0]
 
+    # # -------------------------
+    # # RESPONSE
+    # # -------------------------
+    # return {
+    # "server_health": {
+    #     "status": status,
+    #     "warning": (
+    #         "Current data likely incomplete due to missing planets/API issues"
+    #         if status == "likely_missing_planets"
+    #         else None
+    #     )
+    # },
+
+    # "major_order_data": {
+    #     "timestamp": str(latest["timestamp"]),
+
+    #     "major_order_id": (
+    #         int(latest["major_order_id"])
+    #         if pd.notna(latest["major_order_id"])
+    #         else None
+    #     ),
+
+    #     "major_order_dispatch": latest["major_order_dispatch"],
+
+    #     "players_in_major_order": int(players_in),
+    #     "players_outside_major_order": int(players_out),
+    #     "total_players": int(total_players),
+
+    #     "major_order_ratio": round(float(mo_ratio), 3)
+    # }
+    
     # -------------------------
-    # RESPONSE
-    # -------------------------
-    return {
-    "server_health": {
-        "status": status,
-        "warning": (
-            "Current data likely incomplete due to missing planets/API issues"
-            if status == "likely_missing_planets"
-            else None
-        )
-    },
+# RESPONSE
+# -------------------------
+    result = {
+        "server_health": {
+            "status": status,
+            "warning": (
+                "Current data likely incomplete due to missing planets/API issues"
+                if status == "likely_missing_planets"
+                else None
+            )
+        },
 
-    "major_order_data": {
-        "timestamp": str(latest["timestamp"]),
+        "major_order_data": {
+            "timestamp": str(latest["timestamp"]),
 
-        "major_order_id": (
-            int(latest["major_order_id"])
-            if pd.notna(latest["major_order_id"])
-            else None
-        ),
+            "major_order_id": (
+                int(latest["major_order_id"])
+                if pd.notna(latest["major_order_id"])
+                else None
+            ),
 
-        "major_order_dispatch": latest["major_order_dispatch"],
+            "major_order_dispatch": latest["major_order_dispatch"],
 
-        "players_in_major_order": int(players_in),
-        "players_outside_major_order": int(players_out),
-        "total_players": int(total_players),
+            "players_in_major_order": int(players_in),
+            "players_outside_major_order": int(players_out),
+            "total_players": int(total_players),
 
-        "major_order_ratio": round(float(mo_ratio), 3)
-    }
-}
+            "major_order_ratio": round(float(mo_ratio), 3)
+            }
+        }
+
+    major_order_cache["major_order_status"] = result
+
+    return result
+
     
 @app.get("/major-order-history-by-day")
-def major_order_history_by_day(days_ago: int = 5):
+@limiter.limit("30/minute")
+def major_order_history_by_day( request: Request, days_ago: int = 5):
+    
+    
+    days_ago = min(max(days_ago, 1), 30)
+    
+    cache_key = f"major_order_history_{days_ago}"
 
+    if cache_key in major_order_history_cache:
+        return major_order_history_cache[cache_key]
     # -------------------------
     # FIND TARGET MAJOR ORDER
     # -------------------------
@@ -570,20 +660,33 @@ def major_order_history_by_day(days_ago: int = 5):
             "major_order_ratio": round(float(row["major_order_ratio"]), 3)
         })
 
-    return {
-        "query_days_ago": days_ago,
+    # return {
+    #     "query_days_ago": days_ago,
 
-        "major_order_id": int(target_major_order_id),
+    #     "major_order_id": int(target_major_order_id),
 
-        "major_order_dispatch": dispatch,
+    #     "major_order_dispatch": dispatch,
 
-        "history": history
+    #     "history": history
+    # }
+    
+    result = {
+    "major_order_history": history
     }
+
+    major_order_history_cache[cache_key] = result
+
+    return result
     
     
 @app.get("/forecast-24h")
-def forecast_24h(api_key: str = Security(verify_api_key)):
-
+@limiter.limit("5/minute")
+def forecast_24h( request: Request,api_key: str = Security(verify_api_key)):
+    
+    if "forecast_24h" in forecast_cache:
+        return forecast_cache["forecast_24h"]
+    
+    
     if model is None:
         return {"error": "Model not loaded"}
 
@@ -654,20 +757,49 @@ def forecast_24h(api_key: str = Security(verify_api_key)):
         )
 
         working_df = create_features(working_df)
+    # row = df.iloc[0]
+    
+    # result = {
+    #     "timestamp": str(row["timestamp"]),
+    #     "total_players": total_players
+    # }
+    
+    result = {
+    "server_health": {
+        "status": status
+    },
 
-    return {
-        "server_health": {
-            "status": status
-        },
+    "forecast_horizon_hours": 24,
 
-        "forecast_horizon_hours": 24,
-
-        "forecast": forecasts
+    "forecast": forecasts
     }
+
+    forecast_cache["forecast_24h"] = result
+
+    return result
+    # return {
+    #     "server_health": {
+    #         "status": status
+    #     },
+
+    #     "forecast_horizon_hours": 24,
+
+    #     "forecast": forecasts
+    # }
+    
+    forecast_cache["forecast_24h"] = result
+
+    return result
+    
     
 @app.get("/top-planets")
-def top_planets(limit: int = 10):
+@limiter.limit("30/minute")
+def top_planets( request: Request,limit: int = 10):
+    limit = min(max(limit, 1), 50)
+    cache_key = f"top_planets_{limit}"
 
+    if cache_key in top_planets_cache:
+        return top_planets_cache[cache_key]
     query = f"""
         SELECT
             name,
@@ -711,17 +843,32 @@ def top_planets(limit: int = 10):
         )   
         })
 
-    return {
-        "server_health": {
-            "status": status
-        },
+    # return {
+    #     "server_health": {
+    #         "status": status
+    #     },
 
-        "top_planets": planets
+    #     "top_planets": planets
+    # }
+    result = {
+    "server_health": {
+        "status": status
+    },
+
+    "top_planets": planets
     }
 
-@app.get("/faction-summary")
-def faction_summary():
+    top_planets_cache[cache_key] = result
 
+    return result
+
+@app.get("/faction-summary")
+@limiter.limit("30/minute")
+def faction_summary( request: Request,):
+    #check the cache before hitting the database
+    if "faction_summary" in summary_cache:
+        return summary_cache["faction_summary"]
+    
     query = """
     SELECT
         CASE
@@ -792,18 +939,33 @@ def faction_summary():
             "players_fighting": int(row["total_players"])
         })
 
-    return {
+    result = {
         "server_health": {
             "status": status
         },
 
         "factions": factions
     }
+    #store into cache before returning
+    summary_cache["faction_summary"] = result
+
+    return result
+    # return {
+    #     "server_health": {
+    #         "status": status
+    #     },
+
+    #     "factions": factions
+    # }
     
     
 @app.get("/forecast-vs-actual")
-def forecast_vs_actual(history_hours: int = 24, api_key: str = Security(verify_api_key)):
+@limiter.limit("5/minute")
+def forecast_vs_actual( request: Request, history_hours: int = 24, api_key: str = Security(verify_api_key)):
+    cache_key = f"forecast_vs_actual_{history_hours}"
 
+    if cache_key in forecast_vs_actual_cache:
+        return forecast_vs_actual_cache[cache_key]
     if model is None:
         return {"error": "Model not loaded"}
 
@@ -893,17 +1055,32 @@ def forecast_vs_actual(history_hours: int = 24, api_key: str = Security(verify_a
     # -------------------------
     # RETURN COMBINED
     # -------------------------
-    return {
-        "server_health": {
-            "status": status
-        },
+    # return {
+    #     "server_health": {
+    #         "status": status
+    #     },
 
-        "data": actuals + forecasts
+    #     "data": actuals + forecasts
+    # }
+    
+    result = {
+    "server_health": {
+        "status": status
+    },
+
+    "forecast_vs_actual": actuals + forecasts
     }
+
+    forecast_vs_actual_cache[cache_key] = result
+
+    return result
     
 @app.get("/total-players")
-def total_players():
+@limiter.limit("60/minute")
+def total_players( request: Request,):
 
+    if "total_players" in total_players_cache:
+        return total_players_cache["total_players"]
     query = """
         SELECT
             timestamp,
@@ -927,10 +1104,18 @@ def total_players():
 
     total_players = int(row["total_players"])
 
-    return {
-        "timestamp": str(row["timestamp"]),
-        "total_players": total_players
+    # return {
+    #     "timestamp": str(row["timestamp"]),
+    #     "total_players": total_players
+    # }
+    result = {
+    "timestamp": str(row["timestamp"]),
+    "total_players": total_players
     }
+
+    total_players_cache["total_players"] = result
+
+    return result
 
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
@@ -991,8 +1176,16 @@ def insert_prediction(current_players, predicted, delta, status):
 
     except Exception as e:
         print("🔥 INSERT ERROR:", e)
-        raise
     
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+
+    print(f"Unhandled error: {exc}")
+
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error"}
+    )
 import uvicorn
 import os
 
