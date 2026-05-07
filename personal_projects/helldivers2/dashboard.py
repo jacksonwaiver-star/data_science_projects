@@ -1,23 +1,521 @@
+# import streamlit as st
+# import pandas as pd
+# import requests
+# import plotly.express as px
+# #https://datascienceprojects-usccygvvktsatu5mzrzcyf.streamlit.app/
+# API_BASE = "https://datascienceprojects-production.up.railway.app"
+
+# API_KEY = st.secrets["API_KEY"]
+
+# HEADERS = {
+#     "X-API-Key": API_KEY
+# }
+# st.set_page_config(
+#     page_title="Helldivers Analytics Dashboard",
+#     layout="wide"
+# )
+
+# st.title("Helldivers 2 Analytics Dashboard")
+
+# # =====================================
+# # HEALTH
+# # =====================================
+# st.header("Server Health")
+
+# health = requests.get(f"{API_BASE}/health").json()
+
+# col1, col2, col3 = st.columns(3)
+
+# col1.metric("API", health["api"])
+# col2.metric("Database", health["database"])
+# col3.metric("Model Loaded", health["model_loaded"])
+
+# st.write("Latest Data Timestamp:")
+# st.write(health["latest_data_timestamp"])
+
+# # =====================================
+# # MAJOR ORDER STATUS
+# # =====================================
+# st.header("Current Major Order")
+
+# mo = requests.get(f"{API_BASE}/major-order-status").json()
+
+# st.subheader("Server Health")
+
+# st.json(mo["server_health"])
+
+# st.subheader("Major Order Data")
+
+# mo_data = mo["major_order_data"]
+
+# col1, col2, col3 = st.columns(3)
+
+# col1.metric(
+#     "Players In MO",
+#     f"{mo_data['players_in_major_order']:,}"
+# )
+
+# col2.metric(
+#     "Players Outside MO",
+#     f"{mo_data['players_outside_major_order']:,}"
+# )
+
+# col3.metric(
+#     "MO Ratio",
+#     mo_data["major_order_ratio"]
+# )
+
+# st.write("Major Order Dispatch:")
+# st.write(mo_data["major_order_dispatch"])
+
+# # =====================================
+# # FORECAST
+# # =====================================
+# st.header("24 Hour Forecast")
+
+# #forecast = requests.get(f"{API_BASE}/forecast-24h").json()
+
+# forecast = requests.get(
+#     f"{API_BASE}/forecast-24h",
+#     headers=HEADERS
+# ).json()
+
+# if "forecast" in forecast:
+
+#     forecast_df = pd.DataFrame(forecast["forecast"])
+
+#     fig = px.line(
+#         forecast_df,
+#         x="timestamp",
+#         y="predicted_players",
+#         title="Predicted Players Next 24 Hours"
+#     )
+
+#     st.plotly_chart(fig, width="stretch")
+
+# else:
+#     st.error(forecast)
+
+# # =====================================
+# # HISTORICAL MAJOR ORDER
+# # =====================================
+# st.header("Historical Major Order Analytics")
+
+# days_ago = st.slider(
+#     "Major Order From How Many Days Ago?",
+#     min_value=1,
+#     max_value=30,
+#     value=5
+# )
+
+# history = requests.get(
+#     f"{API_BASE}/major-order-history-by-day?days_ago={days_ago}"
+# ).json()
+
+# if "major_order_history" in history:
+
+#     hist_df = pd.DataFrame(history["major_order_history"])
+
+#     # =====================================
+#     # BAR CHART
+#     # =====================================
+
+#     fig_bar = px.bar(
+#         hist_df,
+#         x="timestamp",
+#         y=[
+#             "players_in_major_order",
+#             "players_outside_major_order"
+#         ],
+#         barmode="group",
+#         title="Major Order vs Non-Major Order Players"
+#     )
+
+#     st.plotly_chart(fig_bar, width="stretch")
+
+#     # =====================================
+#     # AREA CHART
+#     # =====================================
+
+#     fig_area = px.area(
+#         hist_df,
+#         x="timestamp",
+#         y=[
+#             "players_in_major_order",
+#             "players_outside_major_order"
+#         ],
+#         title="Player Distribution Over Time"
+#     )
+
+#     st.plotly_chart(fig_area, width="stretch")
+
+#     # =====================================
+#     # DIFFERENCE CHART
+#     # =====================================
+
+#     hist_df["difference"] = (
+#         hist_df["players_in_major_order"]
+#         - hist_df["players_outside_major_order"]
+#     )
+
+#     fig_diff = px.bar(
+#         hist_df,
+#         x="timestamp",
+#         y="difference",
+#         title="Major Order Player Advantage"
+#     )
+
+#     st.plotly_chart(fig_diff, width="stretch")
+#     # =====================================
+#     # MO RATIO %
+#     # =====================================
+
+#     hist_df["mo_ratio_percent"] = (
+#         hist_df["players_in_major_order"]
+#         / hist_df["total_players"]
+#     ) * 100
+
+#     fig_ratio = px.line(
+#         hist_df,
+#         x="timestamp",
+#         y="mo_ratio_percent",
+#         title="Major Order Participation Percentage"
+#     )
+
+#     st.plotly_chart(fig_ratio, width="stretch")
+
+#     # =====================================
+#     # KPI METRICS
+#     # =====================================
+
+#     latest = hist_df.iloc[-1]
+
+#     players_in = latest["players_in_major_order"]
+#     players_out = latest["players_outside_major_order"]
+
+#     difference = players_in - players_out
+
+#     ratio = (
+#         players_in / players_out
+#         if players_out > 0 else None
+#     )
+
+#     pct_more = (
+#         ((players_in - players_out) / players_out) * 100
+#         if players_out > 0 else None
+#     )
+
+#     st.subheader("Current Major Order Engagement")
+
+#     col1, col2, col3, col4 = st.columns(4)
+
+#     col1.metric(
+#         "Players In MO",
+#         f"{int(players_in):,}"
+#     )
+
+#     col2.metric(
+#         "Players Outside MO",
+#         f"{int(players_out):,}"
+#     )
+
+#     col3.metric(
+#         "Difference",
+#         f"{int(difference):,}"
+#     )
+
+#     col4.metric(
+#         "% More In MO",
+#         f"{pct_more:.1f}%"
+#     )
+
+#     # =====================================
+#     # PEAK ENGAGEMENT
+#     # =====================================
+
+#     peak_idx = hist_df["players_in_major_order"].idxmax()
+
+#     peak_row = hist_df.loc[peak_idx]
+
+#     st.subheader("Peak Engagement")
+
+#     col1, col2 = st.columns(2)
+
+#     col1.metric(
+#         "Peak MO Players",
+#         f"{int(peak_row['players_in_major_order']):,}"
+#     )
+
+#     col2.metric(
+#         "Peak MO %",
+#         f"{peak_row['mo_ratio_percent']:.1f}%"
+#     )
+
+#     st.write("Peak Timestamp:")
+#     st.write(peak_row["timestamp"])
+
+#     # =====================================
+#     # MAJOR ORDER DESCRIPTION
+#     # =====================================
+
+#     st.subheader("Major Order Dispatch")
+
+#     st.write(history["major_order_dispatch"])
+
+# else:
+#     st.error(history)
+    
+    
+    
+# # =====================================
+# # FACTION SUMMARY
+# # =====================================
+
+# st.header("Current Faction Player Distribution")
+# #below is when the data was pulled
+# st.caption(
+#     f"Live snapshot from latest available data pull: "
+#     f"{health['latest_data_timestamp']}"
+# )
+# faction_data = requests.get(
+#     f"{API_BASE}/faction-summary"
+# ).json()
+
+# faction_df = pd.DataFrame(
+#     faction_data["factions"]
+# )
+
+# col1, col2 = st.columns(2)
+
+# # PIE CHART
+# with col1:
+
+#     fig_pie = px.pie(
+#         faction_df,
+#         names="enemy_faction",
+#         values="players_fighting",
+#         title="Players Fighting Each Enemy Faction"
+#     )
+
+#     st.plotly_chart(fig_pie, use_container_width=True)
+
+# # BAR CHART
+# with col2:
+
+#     fig_bar = px.bar(
+#         faction_df,
+#         x="enemy_faction",
+#         y="players_fighting",
+#         title="Players Fighting Each Enemy Faction"
+#     )
+
+#     st.plotly_chart(fig_bar, use_container_width=True)
+    
+    
+# # =====================================
+# # TOP PLANETS
+# # =====================================
+
+# st.header("Top Active Planets")
+
+# top_planets = requests.get(
+#     f"{API_BASE}/top-planets?limit=15"
+# ).json()
+
+# # SERVER HEALTH WARNING
+# if top_planets["server_health"]["status"] != "ok":
+
+#     st.warning(
+#         f"Planet data may be unreliable: "
+#         f"{top_planets['server_health']['status']}"
+#     )
+
+# top_df = pd.DataFrame(
+#     top_planets["top_planets"]
+# )
+
+# # CLEAN COLUMN NAMES
+# # top_df.columns = [
+# #     "Planet",
+# #     "Players",
+# #     "Owner",
+# #     "In Major Order",
+# #     "Strategic Opportunity",
+# #     "Possible Paths To MO",
+# #     "Sector"
+# # ]
+
+# top_df = top_df.rename(columns={
+#     "planet": "Planet",
+#     "players": "Players",
+#     "owner": "Owner",
+#     "in_major_order": "In Major Order",
+#     "sector": "Sector",
+#     "strategic_opportunity": "Strategic Opportunity",
+#     "possible_paths_to_major_order": "Possible Paths To MO"
+# })
+# #st.write(top_df.columns.tolist())
+# # SORT
+# top_df = top_df.sort_values(
+#     by="Players",
+#     ascending=False
+# )
+
+# # TABLE
+# st.dataframe(
+#     top_df,
+#     use_container_width=True,
+#     hide_index=True
+# )
+
+# # =====================================
+# # TOP PLANETS BAR CHART
+# # =====================================
+
+# fig_top = px.bar(
+#     top_df,
+#     x="Planet",
+#     y="Players",
+#     color="Owner",
+#     title="Top Populated Planets"
+# )
+
+# st.plotly_chart(
+#     fig_top,
+#     use_container_width=True
+# )
+
+
+
+
+
+#copy and paste below
+
+
 import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
 
+# =====================================
+# CONFIG
+# =====================================
+
 API_BASE = "https://datascienceprojects-production.up.railway.app"
+
+API_KEY = st.secrets["API_KEY"]
+
+HEADERS = {
+    "X-API-Key": API_KEY
+}
 
 st.set_page_config(
     page_title="Helldivers Analytics Dashboard",
     layout="wide"
 )
 
+st.autorefresh(interval=300000, key="refresh")
+
 st.title("Helldivers 2 Analytics Dashboard")
+
+st.caption(
+    "Live Helldivers 2 analytics platform with forecasting, "
+    "major order tracking, and real-time faction engagement metrics."
+)
+
+# =====================================
+# CACHED API HELPERS
+# =====================================
+
+@st.cache_data(ttl=300)
+def get_health():
+    response = requests.get(
+        f"{API_BASE}/health",
+        headers=HEADERS,
+        timeout=20
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+@st.cache_data(ttl=300)
+def get_major_order():
+    response = requests.get(
+        f"{API_BASE}/major-order-status",
+        headers=HEADERS,
+        timeout=20
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+@st.cache_data(ttl=300)
+def get_forecast():
+    response = requests.get(
+        f"{API_BASE}/forecast-24h",
+        headers=HEADERS,
+        timeout=20
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+@st.cache_data(ttl=300)
+def get_faction_summary():
+    response = requests.get(
+        f"{API_BASE}/faction-summary",
+        headers=HEADERS,
+        timeout=20
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+@st.cache_data(ttl=120)
+def get_top_planets(limit=15):
+    response = requests.get(
+        f"{API_BASE}/top-planets?limit={limit}",
+        headers=HEADERS,
+        timeout=20
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+@st.cache_data(ttl=300)
+def get_major_order_history(days_ago):
+    response = requests.get(
+        f"{API_BASE}/major-order-history-by-day?days_ago={days_ago}",
+        headers=HEADERS,
+        timeout=20
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 
 # =====================================
 # HEALTH
 # =====================================
-st.header("Server Health")
 
-health = requests.get(f"{API_BASE}/health").json()
+try:
+    health = get_health()
+except Exception as e:
+    st.error(f"Health endpoint failed: {e}")
+    st.stop()
+
+st.header("Server Health")
 
 col1, col2, col3 = st.columns(3)
 
@@ -31,9 +529,14 @@ st.write(health["latest_data_timestamp"])
 # =====================================
 # MAJOR ORDER STATUS
 # =====================================
-st.header("Current Major Order")
 
-mo = requests.get(f"{API_BASE}/major-order-status").json()
+try:
+    mo = get_major_order()
+except Exception as e:
+    st.error(f"Major order endpoint failed: {e}")
+    st.stop()
+
+st.header("Current Major Order")
 
 st.subheader("Server Health")
 
@@ -60,15 +563,21 @@ col3.metric(
     mo_data["major_order_ratio"]
 )
 
-st.write("Major Order Dispatch:")
-st.write(mo_data["major_order_dispatch"])
+st.subheader("Major Order Dispatch")
+
+st.info(mo_data["major_order_dispatch"])
 
 # =====================================
 # FORECAST
 # =====================================
-st.header("24 Hour Forecast")
 
-forecast = requests.get(f"{API_BASE}/forecast-24h").json()
+try:
+    forecast = get_forecast()
+except Exception as e:
+    st.error(f"Forecast endpoint failed: {e}")
+    st.stop()
+
+st.header("24 Hour Forecast")
 
 if "forecast" in forecast:
 
@@ -78,10 +587,14 @@ if "forecast" in forecast:
         forecast_df,
         x="timestamp",
         y="predicted_players",
-        title="Predicted Players Next 24 Hours"
+        title="Predicted Players Next 24 Hours",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 else:
     st.error(forecast)
@@ -89,6 +602,7 @@ else:
 # =====================================
 # HISTORICAL MAJOR ORDER
 # =====================================
+
 st.header("Historical Major Order Analytics")
 
 days_ago = st.slider(
@@ -98,13 +612,15 @@ days_ago = st.slider(
     value=5
 )
 
-history = requests.get(
-    f"{API_BASE}/major-order-history-by-day?days_ago={days_ago}"
-).json()
+try:
+    history = get_major_order_history(days_ago)
+except Exception as e:
+    st.error(f"Historical endpoint failed: {e}")
+    st.stop()
 
-if "history" in history:
+if "major_order_history" in history:
 
-    hist_df = pd.DataFrame(history["history"])
+    hist_df = pd.DataFrame(history["major_order_history"])
 
     # =====================================
     # BAR CHART
@@ -118,10 +634,14 @@ if "history" in history:
             "players_outside_major_order"
         ],
         barmode="group",
-        title="Major Order vs Non-Major Order Players"
+        title="Major Order vs Non-Major Order Players",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig_bar, width="stretch")
+    st.plotly_chart(
+        fig_bar,
+        use_container_width=True
+    )
 
     # =====================================
     # AREA CHART
@@ -134,10 +654,14 @@ if "history" in history:
             "players_in_major_order",
             "players_outside_major_order"
         ],
-        title="Player Distribution Over Time"
+        title="Player Distribution Over Time",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig_area, width="stretch")
+    st.plotly_chart(
+        fig_area,
+        use_container_width=True
+    )
 
     # =====================================
     # DIFFERENCE CHART
@@ -152,10 +676,15 @@ if "history" in history:
         hist_df,
         x="timestamp",
         y="difference",
-        title="Major Order Player Advantage"
+        title="Major Order Player Advantage",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig_diff, width="stretch")
+    st.plotly_chart(
+        fig_diff,
+        use_container_width=True
+    )
+
     # =====================================
     # MO RATIO %
     # =====================================
@@ -169,10 +698,14 @@ if "history" in history:
         hist_df,
         x="timestamp",
         y="mo_ratio_percent",
-        title="Major Order Participation Percentage"
+        title="Major Order Participation Percentage",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig_ratio, width="stretch")
+    st.plotly_chart(
+        fig_ratio,
+        use_container_width=True
+    )
 
     # =====================================
     # KPI METRICS
@@ -185,14 +718,9 @@ if "history" in history:
 
     difference = players_in - players_out
 
-    ratio = (
-        players_in / players_out
-        if players_out > 0 else None
-    )
-
     pct_more = (
         ((players_in - players_out) / players_out) * 100
-        if players_out > 0 else None
+        if players_out > 0 else 0
     )
 
     st.subheader("Current Major Order Engagement")
@@ -244,32 +772,25 @@ if "history" in history:
     st.write("Peak Timestamp:")
     st.write(peak_row["timestamp"])
 
-    # =====================================
-    # MAJOR ORDER DESCRIPTION
-    # =====================================
-
-    st.subheader("Major Order Dispatch")
-
-    st.write(history["major_order_dispatch"])
-
 else:
     st.error(history)
-    
-    
-    
+
 # =====================================
 # FACTION SUMMARY
 # =====================================
 
+try:
+    faction_data = get_faction_summary()
+except Exception as e:
+    st.error(f"Faction endpoint failed: {e}")
+    st.stop()
+
 st.header("Current Faction Player Distribution")
-#below is when the data was pulled
+
 st.caption(
     f"Live snapshot from latest available data pull: "
     f"{health['latest_data_timestamp']}"
 )
-faction_data = requests.get(
-    f"{API_BASE}/faction-summary"
-).json()
 
 faction_df = pd.DataFrame(
     faction_data["factions"]
@@ -282,38 +803,46 @@ with col1:
 
     fig_pie = px.pie(
         faction_df,
-        names="faction",
-        values="players",
-        title="Players By Faction"
+        names="enemy_faction",
+        values="players_fighting",
+        title="Players Fighting Each Enemy Faction",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig_pie, use_container_width=True)
+    st.plotly_chart(
+        fig_pie,
+        use_container_width=True
+    )
 
 # BAR CHART
 with col2:
 
     fig_bar = px.bar(
         faction_df,
-        x="faction",
-        y="players",
-        title="Faction Population"
+        x="enemy_faction",
+        y="players_fighting",
+        title="Players Fighting Each Enemy Faction",
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig_bar, use_container_width=True)
-    
-    
+    st.plotly_chart(
+        fig_bar,
+        use_container_width=True
+    )
+
 # =====================================
 # TOP PLANETS
 # =====================================
 
+try:
+    top_planets = get_top_planets(15)
+except Exception as e:
+    st.error(f"Top planets endpoint failed: {e}")
+    st.stop()
+
 st.header("Top Active Planets")
 
-top_planets = requests.get(
-    f"{API_BASE}/top-planets?limit=15"
-).json()
-
-# SERVER HEALTH WARNING
-if top_planets["server_health"]["status"] != "healthy":
+if top_planets["server_health"]["status"] != "ok":
 
     st.warning(
         f"Planet data may be unreliable: "
@@ -324,17 +853,6 @@ top_df = pd.DataFrame(
     top_planets["top_planets"]
 )
 
-# CLEAN COLUMN NAMES
-# top_df.columns = [
-#     "Planet",
-#     "Players",
-#     "Owner",
-#     "In Major Order",
-#     "Strategic Opportunity",
-#     "Possible Paths To MO",
-#     "Sector"
-# ]
-
 top_df = top_df.rename(columns={
     "planet": "Planet",
     "players": "Players",
@@ -344,14 +862,12 @@ top_df = top_df.rename(columns={
     "strategic_opportunity": "Strategic Opportunity",
     "possible_paths_to_major_order": "Possible Paths To MO"
 })
-#st.write(top_df.columns.tolist())
-# SORT
+
 top_df = top_df.sort_values(
     by="Players",
     ascending=False
 )
 
-# TABLE
 st.dataframe(
     top_df,
     use_container_width=True,
@@ -367,7 +883,8 @@ fig_top = px.bar(
     x="Planet",
     y="Players",
     color="Owner",
-    title="Top Populated Planets"
+    title="Top Populated Planets",
+    template="plotly_dark"
 )
 
 st.plotly_chart(
