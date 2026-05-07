@@ -900,6 +900,37 @@ def forecast_vs_actual(history_hours: int = 24, api_key: str = Security(verify_a
 
         "data": actuals + forecasts
     }
+    
+@app.get("/total-players")
+def total_players():
+
+    query = """
+        SELECT
+            timestamp,
+            SUM(player_on_planet) AS total_players
+        FROM planet_history
+        WHERE timestamp = (
+            SELECT MAX(timestamp)
+            FROM planet_history
+        )
+        GROUP BY timestamp
+    """
+
+    df = pd.read_sql(query, engine)
+
+    if df.empty:
+        return {
+            "error": "No data found"
+        }
+
+    row = df.iloc[0]
+
+    total_players = int(row["total_players"])
+
+    return {
+        "timestamp": str(row["timestamp"]),
+        "total_players": total_players
+    }
 
 def detect_data_issue(df):
     current = df["total_players"].iloc[-1]
