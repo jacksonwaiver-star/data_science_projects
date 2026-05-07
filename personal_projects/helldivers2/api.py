@@ -723,38 +723,50 @@ def top_planets(limit: int = 10):
 def faction_summary():
 
     query = """
-        SELECT
-            CASE
+    SELECT
+        CASE
 
-                -- HUMAN DEFENSE PLANETS
-                WHEN "currentOwner" = 'Humans'
-                     AND enemy_attacking_owner IS NOT NULL
-                     AND enemy_attacking_owner != 'Humans'
+            -- HUMAN DEFENSE PLANETS
+            WHEN "currentOwner" = 'Humans'
+                 AND enemy_attacking_owner IS NOT NULL
+                 AND enemy_attacking_owner != 'Humans'
 
-                THEN enemy_attacking_owner
+            THEN enemy_attacking_owner
 
-                -- ENEMY-OWNED LIBERATION PLANETS
-                WHEN "currentOwner" != 'Humans'
+            -- ENEMY-OWNED LIBERATION PLANETS
+            WHEN "currentOwner" != 'Humans'
 
-                THEN "currentOwner"
+            THEN "currentOwner"
 
-            END AS enemy_faction,
+        END AS enemy_faction,
 
-            SUM(player_on_planet) AS total_players
+        SUM(player_on_planet) AS total_players
 
+    FROM planet_history
+
+    WHERE timestamp = (
+        SELECT MAX(timestamp)
         FROM planet_history
+    )
 
-        WHERE timestamp = (
-            SELECT MAX(timestamp)
-            FROM planet_history
+    AND (
+        (
+            "currentOwner" = 'Humans'
+            AND enemy_attacking_owner IS NOT NULL
+            AND enemy_attacking_owner != 'Humans'
         )
 
-        GROUP BY enemy_faction
+        OR
 
-        HAVING enemy_faction IS NOT NULL
+        (
+            "currentOwner" != 'Humans'
+        )
+    )
 
-        ORDER BY total_players DESC
-    """
+    GROUP BY enemy_faction
+
+    ORDER BY total_players DESC
+"""
 
     df = pd.read_sql(query, engine)
 
