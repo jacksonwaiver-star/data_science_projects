@@ -414,7 +414,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.autorefresh(interval=300000, key="refresh")
+#st.autorefresh(interval=300000, key="refresh")
 
 st.title("Helldivers 2 Analytics Dashboard")
 
