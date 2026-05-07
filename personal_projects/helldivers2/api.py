@@ -60,7 +60,7 @@ def verify_api_key(api_key: str = Security(api_key_header)):
     if api_key != API_KEY:
         raise HTTPException(
             status_code=403,
-            detail="Unauthorized"
+            detail="Unauthorized, you forgot to authorize with a valid API key in the header"
         )
 
     return api_key
@@ -724,14 +724,35 @@ def faction_summary():
 
     query = """
         SELECT
-            "currentOwner",
-            SUM(player_on_planet) as total_players
+            CASE
+
+                -- HUMAN DEFENSE PLANETS
+                WHEN "currentOwner" = 'Humans'
+                     AND enemy_attacking_owner IS NOT NULL
+                     AND enemy_attacking_owner != 'Humans'
+
+                THEN enemy_attacking_owner
+
+                -- ENEMY-OWNED LIBERATION PLANETS
+                WHEN "currentOwner" != 'Humans'
+
+                THEN "currentOwner"
+
+            END AS enemy_faction,
+
+            SUM(player_on_planet) AS total_players
+
         FROM planet_history
+
         WHERE timestamp = (
             SELECT MAX(timestamp)
             FROM planet_history
         )
-        GROUP BY "currentOwner"
+
+        GROUP BY enemy_faction
+
+        HAVING enemy_faction IS NOT NULL
+
         ORDER BY total_players DESC
     """
 
