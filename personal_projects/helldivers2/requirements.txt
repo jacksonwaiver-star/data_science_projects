@@ -11,3 +11,5 @@ python-dotenv
 scikit-learn
 xgboost
 plotly
+cachetools
+slowapi
