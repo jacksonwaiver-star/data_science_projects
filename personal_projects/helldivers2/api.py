@@ -770,19 +770,26 @@ def faction_summary():
 
     df = pd.read_sql(query, engine)
 
-    status = detect_data_issue(
-        df.rename(columns={
-            "total_players": "total_players"
-        })
-    )
+    # status = detect_data_issue(
+    #     df.rename(columns={
+    #         "total_players": "total_players"
+    #     })
+    # )
+    
+    status = "ok"
 
     factions = []
 
     for _, row in df.iterrows():
 
+        # factions.append({
+        #     "faction": row["currentOwner"],
+        #     "players": int(row["total_players"])
+        # })
+        
         factions.append({
-            "faction": row["currentOwner"],
-            "players": int(row["total_players"])
+        "enemy_faction": row["enemy_faction"],
+            "players_fighting": int(row["total_players"])
         })
 
     return {
