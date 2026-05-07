@@ -85,6 +85,7 @@ async def rate_limit_handler(request, exc):
 
 #add API keys for expensive endpoints and to prevent abuse
 API_KEY = os.getenv("API_KEY")
+DEMO_API_KEY = os.getenv("DEMO_API_KEY")
 
 api_key_header = APIKeyHeader(
     name="X-API-Key",
@@ -93,10 +94,15 @@ api_key_header = APIKeyHeader(
 
 def verify_api_key(api_key: str = Security(api_key_header)):
 
-    if api_key != API_KEY:
+    valid_keys = [
+        API_KEY,
+        DEMO_API_KEY
+    ]
+
+    if api_key not in valid_keys:
         raise HTTPException(
             status_code=403,
-            detail="Unauthorized, you forgot to authorize with a valid API key in the header"
+            detail="Invalid API Key"
         )
 
     return api_key
