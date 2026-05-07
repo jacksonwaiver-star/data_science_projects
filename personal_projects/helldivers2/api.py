@@ -34,8 +34,8 @@
 
 
 
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Security
+from fastapi.security import APIKeyHeader
 import joblib
 import pandas as pd
 import numpy as np
@@ -46,6 +46,23 @@ class DataPoint(BaseModel):
     timestamp: str
     total_players: float
 app = FastAPI()
+#add API keys for expensive endpoints and to prevent abuse
+API_KEY = os.getenv("API_KEY")
+
+api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    auto_error=False
+)
+
+def verify_api_key(api_key: str = Security(api_key_header)):
+
+    if api_key != API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized"
+        )
+
+    return api_key
 
 # =========================
 # LOAD MODEL
@@ -239,7 +256,7 @@ def health():
 
 
 @app.get("/predict-live")
-def predict_live():
+def predict_live(api_key: str = Security(verify_api_key)):
 
     df = fetch_recent_data(limit=600)
 
@@ -564,7 +581,7 @@ def major_order_history_by_day(days_ago: int = 5):
     
     
 @app.get("/forecast-24h")
-def forecast_24h():
+def forecast_24h(api_key: str = Security(verify_api_key)):
 
     if model is None:
         return {"error": "Model not loaded"}
@@ -744,7 +761,7 @@ def faction_summary():
     
     
 @app.get("/forecast-vs-actual")
-def forecast_vs_actual(history_hours: int = 24):
+def forecast_vs_actual(history_hours: int = 24, api_key: str = Security(verify_api_key)):
 
     if model is None:
         return {"error": "Model not loaded"}
