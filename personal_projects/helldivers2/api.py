@@ -260,7 +260,7 @@ def fetch_recent_data(limit=500):
     return df
 
 @app.get("/health")
-@limiter.limit("60/minute")
+@limiter.limit("5/minute")
 def health( request: Request):
 
     # -------------------------
@@ -305,7 +305,7 @@ def health( request: Request):
 
 
 @app.get("/predict-live")
-@limiter.limit("10/minute")
+@limiter.limit("2/minute")
 def predict_live( request: Request, api_key: str = Security(verify_api_key)):
 
     df = fetch_recent_data(limit=600)
@@ -429,7 +429,7 @@ def predict_live( request: Request, api_key: str = Security(verify_api_key)):
 #     }
 
 @app.get("/major-order-status")
-@limiter.limit("30/minute")
+@limiter.limit("3/minute")
 def major_order_status( request: Request):
 
     if "major_order_status" in major_order_cache:
@@ -567,7 +567,7 @@ def major_order_status( request: Request):
 
     
 @app.get("/major-order-history-by-day")
-@limiter.limit("30/minute")
+@limiter.limit("3/minute")
 def major_order_history_by_day( request: Request, days_ago: int = 5):
     
     
@@ -686,7 +686,7 @@ def major_order_history_by_day( request: Request, days_ago: int = 5):
     
     
 @app.get("/forecast-24h")
-@limiter.limit("5/minute")
+@limiter.limit("2/minute")
 def forecast_24h( request: Request,api_key: str = Security(verify_api_key)):
     
     if "forecast_24h" in forecast_cache:
@@ -799,7 +799,7 @@ def forecast_24h( request: Request,api_key: str = Security(verify_api_key)):
     
     
 @app.get("/top-planets")
-@limiter.limit("30/minute")
+@limiter.limit("3/minute")
 def top_planets( request: Request,limit: int = 10):
     limit = min(max(limit, 1), 50)
     cache_key = f"top_planets_{limit}"
@@ -966,7 +966,7 @@ def faction_summary( request: Request,):
     
     
 @app.get("/forecast-vs-actual")
-@limiter.limit("5/minute")
+@limiter.limit("2/minute")
 def forecast_vs_actual( request: Request, history_hours: int = 24, api_key: str = Security(verify_api_key)):
     cache_key = f"forecast_vs_actual_{history_hours}"
 
@@ -1082,7 +1082,7 @@ def forecast_vs_actual( request: Request, history_hours: int = 24, api_key: str 
     return result
     
 @app.get("/total-players")
-@limiter.limit("60/minute")
+@limiter.limit("5/minute")
 def total_players( request: Request,):
 
     if "total_players" in total_players_cache:
