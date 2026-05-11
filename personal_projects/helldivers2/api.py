@@ -53,10 +53,14 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 import os
 
+
+
 class DataPoint(BaseModel):
     timestamp: str
     total_players: float
 app = FastAPI()
+
+
 
 class UserEvent(BaseModel):
     session_id: str
@@ -269,6 +273,61 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_recycle=300
 )
+
+# from fastapi import FastAPI, HTTPException, Request, Security
+# from fastapi.responses import JSONResponse
+# from fastapi.security import APIKeyHeader
+# import joblib
+# import pandas as pd
+# import numpy as np
+# from pydantic import BaseModel
+# from typing import List
+# import os
+# from slowapi import Limiter
+# from slowapi.util import get_remote_address
+# from slowapi.errors import RateLimitExceeded
+# from slowapi.middleware import SlowAPIMiddleware
+# from cachetools import TTLCache
+# from pydantic import BaseModel
+# from sqlalchemy import create_engine, text
+# import os
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+
+    response = await call_next(request)
+
+    try:
+
+        session_id = request.headers.get(
+            "X-Session-ID",
+            "unknown"
+        )
+
+        path = request.url.path
+
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO user_events (
+                    session_id,
+                    event_type,
+                    element
+                )
+                VALUES (
+                    :session_id,
+                    :event_type,
+                    :element
+                )
+            """), {
+                "session_id": session_id,
+                "event_type": "api_call",
+                "element": path
+            })
+
+    except Exception as e:
+        print(f"Tracking middleware failed: {e}")
+
+    return response
 
 def fetch_recent_data(limit=500):
     limit = min(max(limit, 1), 1000)
