@@ -1,7 +1,7 @@
 #below are commands to put in terminal
 #cd personal_projects/helldivers2   
 #uvicorn api:app --reload 
-
+#https://datascienceprojects-production.up.railway.app/docs#/
 
 
 #[
@@ -50,6 +50,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from cachetools import TTLCache
 from pydantic import BaseModel
+from sqlalchemy import create_engine, text
+import os
 
 class DataPoint(BaseModel):
     timestamp: str
@@ -257,8 +259,7 @@ def get_connection():
 #     conn.close()
 
 
-from sqlalchemy import create_engine
-import os
+
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
