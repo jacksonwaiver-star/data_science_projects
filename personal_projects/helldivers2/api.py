@@ -71,8 +71,41 @@ class UserEvent(BaseModel):
     event_type: str
     element: str
     
-@app.post("/track-event")
-def track_event(event: UserEvent):
+    
+
+#add API keys for expensive endpoints and to prevent abuse
+API_KEY = os.getenv("API_KEY")
+DEMO_API_KEY = os.getenv("DEMO_API_KEY")
+
+api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    auto_error=False
+)
+
+def verify_api_key(api_key: str = Security(api_key_header)):
+
+    key_map = {
+        API_KEY: "owner",
+        DEMO_API_KEY: "recruiter"
+    }
+
+    if api_key not in key_map:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API Key"
+        )
+
+    return key_map[api_key]
+
+
+@app.post(
+    "/track-event",
+    include_in_schema=False
+)
+def track_event(
+    event: UserEvent,
+    user_type: str = Security(verify_api_key)
+):
 
     with engine.begin() as conn:
         conn.execute(text("""
@@ -123,28 +156,28 @@ async def rate_limit_handler(request, exc):
     )
 
 #add API keys for expensive endpoints and to prevent abuse
-API_KEY = os.getenv("API_KEY")
-DEMO_API_KEY = os.getenv("DEMO_API_KEY")
+# API_KEY = os.getenv("API_KEY")
+# DEMO_API_KEY = os.getenv("DEMO_API_KEY")
 
-api_key_header = APIKeyHeader(
-    name="X-API-Key",
-    auto_error=False
-)
+# api_key_header = APIKeyHeader(
+#     name="X-API-Key",
+#     auto_error=False
+# )
 
-def verify_api_key(api_key: str = Security(api_key_header)):
+# def verify_api_key(api_key: str = Security(api_key_header)):
 
-    key_map = {
-        API_KEY: "owner",
-        DEMO_API_KEY: "recruiter"
-    }
+#     key_map = {
+#         API_KEY: "owner",
+#         DEMO_API_KEY: "recruiter"
+#     }
 
-    if api_key not in key_map:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid API Key"
-        )
+#     if api_key not in key_map:
+#         raise HTTPException(
+#             status_code=403,
+#             detail="Invalid API Key"
+#         )
 
-    return key_map[api_key]
+#     return key_map[api_key]
 
 # =========================
 # LOAD MODEL
