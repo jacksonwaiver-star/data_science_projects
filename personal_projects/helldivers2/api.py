@@ -353,9 +353,10 @@ async def log_requests(request: Request, call_next):
             session_id = "unknown"
 
         path = request.url.path
-        
+        #was logging badly in database with only a / so changed it to home for better analytics
+        if path == "/":
+            path = "home"
         ignored_paths = [
-        "/health",
         "/docs",
         "/openapi.json",
         "/favicon.ico"
