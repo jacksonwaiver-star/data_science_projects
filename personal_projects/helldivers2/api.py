@@ -56,6 +56,8 @@ from cachetools import TTLCache
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 import os
+from collections import defaultdict
+import time
 
 
 
@@ -106,16 +108,16 @@ def track_event(
     event: UserEvent,
     user_type: str = Security(verify_api_key)
 ):
-    status_code = response.status_code
+    # status_code = response.status_code
 
-    if status_code == 403:
-        event_type = "unauthorized"
+    # if status_code == 403:
+    #     event_type = "unauthorized"
 
-    elif status_code == 429:
-        event_type = "rate_limited"
+    # elif status_code == 429:
+    #     event_type = "rate_limited"
 
-    else:
-        event_type = "api_call"
+    # else:
+    #     event_type = "api_call"
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO user_events (
@@ -150,6 +152,13 @@ total_players_cache = TTLCache(maxsize=20, ttl=60)
 
 major_order_history_cache = TTLCache(maxsize=50, ttl=300)
 
+FAILED_ATTEMPTS = defaultdict(int)
+
+BLOCKED_IPS = {}
+
+MAX_FAILED_ATTEMPTS = 10
+
+BLOCK_DURATION_SECONDS = 60 * 30
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -342,6 +351,28 @@ engine = create_engine(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
 
+    client_ip = str(request.client.host)
+
+    # =========================
+    # CHECK BLOCK
+    # =========================
+    if client_ip in BLOCKED_IPS:
+
+        unblock_time = BLOCKED_IPS[client_ip]
+
+        if time.time() < unblock_time:
+
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "Temporarily blocked"
+                }
+            )
+
+    else:
+        del BLOCKED_IPS[client_ip]
+        FAILED_ATTEMPTS[client_ip] = 0
+        
     response = await call_next(request)
 
     try:
@@ -400,6 +431,22 @@ async def log_requests(request: Request, call_next):
 
         else:
             event_type = "api_call"
+            
+        # =========================
+        # FAILED AUTH TRACKING
+        # =========================
+        if status_code == 403:
+
+            FAILED_ATTEMPTS[client_ip] += 1
+
+            if FAILED_ATTEMPTS[client_ip] >= MAX_FAILED_ATTEMPTS:
+
+                BLOCKED_IPS[client_ip] = (
+                    time.time() + BLOCK_DURATION_SECONDS
+                )
+
+        else:
+            FAILED_ATTEMPTS[client_ip] = 0
 
         # =========================
         # INSERT
