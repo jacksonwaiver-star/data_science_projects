@@ -363,7 +363,6 @@ async def log_requests(request: Request, call_next):
     print(f"BLOCKED IPS: {BLOCKED_IPS}")
     
     protected_paths = [
-        "/",
         "/health",
         "/predict-live",
         "/major-order-status",
