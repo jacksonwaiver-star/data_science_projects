@@ -37,7 +37,7 @@
 
 from sys import path
 
-from urllib import response
+from urllib import request, response
 
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.responses import JSONResponse
@@ -346,25 +346,36 @@ async def log_requests(request: Request, call_next):
 
     try:
 
-        # session_id = request.headers.get(
-        #     "X-Session-ID",
-        #     "unknown"
-        # )
+        # =========================
+        # SESSION ID
+        # =========================
+        session_id = request.headers.get(
+            "X-Session-ID",
+            "unknown_session"
+        )
+
+        # =========================
+        # API KEY
+        # =========================
         api_key = request.headers.get("X-API-Key")
 
         if api_key == API_KEY:
-            session_id = "owner"
+            user_type = "owner"
 
         elif api_key == DEMO_API_KEY:
-            session_id = "recruiter"
+            user_type = "recruiter"
 
         else:
-            session_id = "unknown"
+            user_type = "anonymous"
 
+        # =========================
+        # PATH
+        # =========================
         path = request.url.path
-        #was logging badly in database with only a / so changed it to home for better analytics
+
         if path == "/":
             path = "/home"
+
         ignored_paths = [
             "/openapi.json",
             "/favicon.ico"
@@ -372,6 +383,10 @@ async def log_requests(request: Request, call_next):
 
         if path in ignored_paths:
             return response
+
+        # =========================
+        # EVENT TYPE
+        # =========================
         status_code = response.status_code
 
         if status_code == 403:
@@ -380,23 +395,32 @@ async def log_requests(request: Request, call_next):
         elif status_code == 429:
             event_type = "rate_limited"
 
+        elif path == "/docs":
+            event_type = "swagger_open"
+
         else:
             event_type = "api_call"
-            
+
+        # =========================
+        # INSERT
+        # =========================
         with engine.begin() as conn:
             conn.execute(text("""
                 INSERT INTO user_events (
                     session_id,
+                    user_type,
                     event_type,
                     element
                 )
                 VALUES (
                     :session_id,
+                    :user_type,
                     :event_type,
                     :element
                 )
             """), {
                 "session_id": session_id,
+                "user_type": user_type,
                 "event_type": event_type,
                 "element": path
             })
