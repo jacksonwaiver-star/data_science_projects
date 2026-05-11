@@ -389,7 +389,8 @@ async def log_requests(request: Request, call_next):
         session_id = request.headers.get("X-Session-ID")
 
         if not session_id:
-            session_id = str(request.client.host)
+            #session_id = str(request.client.host)
+            session_id = client_ip
 
         # =========================
         # API KEY
@@ -404,6 +405,13 @@ async def log_requests(request: Request, call_next):
 
         else:
             user_type = "anonymous"
+            
+        # =========================
+        # RESET FAILED ATTEMPTS
+        # ON SUCCESSFUL AUTH
+        # =========================
+        if user_type != "anonymous":
+            FAILED_ATTEMPTS[client_ip] = 0
 
         # =========================
         # PATH
@@ -441,9 +449,26 @@ async def log_requests(request: Request, call_next):
         # =========================
         # FAILED AUTH TRACKING
         # =========================
-        if status_code == 403:
+        # if user_type == "anonymous":
+        protected_paths = [
+            "/health",
+            "/predict-live",
+            "/major-order-status",
+            "/forecast-24h",
+            "/top-planets",
+            "/forecast-vs-actual",
+            "/total-players"
+        ]
+
+        if (
+            user_type == "anonymous"
+            and path in protected_paths
+        ):
 
             FAILED_ATTEMPTS[client_ip] += 1
+
+            print(f"FAILED LOGIN: {client_ip}")
+            print(f"ATTEMPTS: {FAILED_ATTEMPTS[client_ip]}")
 
             if FAILED_ATTEMPTS[client_ip] >= MAX_FAILED_ATTEMPTS:
 
@@ -451,8 +476,10 @@ async def log_requests(request: Request, call_next):
                     time.time() + BLOCK_DURATION_SECONDS
                 )
 
-        else:
-            FAILED_ATTEMPTS[client_ip] = 0
+                print(f"BLOCKED IP: {client_ip}")
+
+        # else:
+        #     FAILED_ATTEMPTS[client_ip] = 0
 
         # =========================
         # INSERT
