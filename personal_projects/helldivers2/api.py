@@ -372,9 +372,9 @@ async def log_requests(request: Request, call_next):
                 }
             )
 
-    else:
-        del BLOCKED_IPS[client_ip]
-        FAILED_ATTEMPTS[client_ip] = 0
+        else:
+            del BLOCKED_IPS[client_ip]
+            FAILED_ATTEMPTS[client_ip] = 0
         
     response = await call_next(request)
 
