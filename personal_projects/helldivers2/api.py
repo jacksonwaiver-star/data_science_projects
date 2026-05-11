@@ -156,7 +156,7 @@ FAILED_ATTEMPTS = defaultdict(int)
 
 BLOCKED_IPS = {}
 
-MAX_FAILED_ATTEMPTS = 10
+MAX_FAILED_ATTEMPTS = 5
 
 BLOCK_DURATION_SECONDS = 60 * 30
 
@@ -351,7 +351,10 @@ engine = create_engine(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
 
-    client_ip = str(request.client.host)
+    client_ip = request.headers.get(
+        "X-Forwarded-For",
+        str(request.client.host)
+    ).split(",")[0].strip()
 
     # =========================
     # CHECK BLOCK
