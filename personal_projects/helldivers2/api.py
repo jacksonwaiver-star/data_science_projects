@@ -356,6 +356,9 @@ async def log_requests(request: Request, call_next):
         str(request.client.host)
     ).split(",")[0].strip()
 
+    print(f"CLIENT IP: {client_ip}")
+    print(f"FAILED ATTEMPTS: {FAILED_ATTEMPTS}")
+    print(f"BLOCKED IPS: {BLOCKED_IPS}")
     # =========================
     # CHECK BLOCK
     # =========================
