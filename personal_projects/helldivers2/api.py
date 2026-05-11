@@ -356,9 +356,33 @@ async def log_requests(request: Request, call_next):
         str(request.client.host)
     ).split(",")[0].strip()
 
+    
+     
     print(f"CLIENT IP: {client_ip}")
     print(f"FAILED ATTEMPTS: {FAILED_ATTEMPTS}")
     print(f"BLOCKED IPS: {BLOCKED_IPS}")
+    
+    protected_paths = [
+        "/health",
+        "/predict-live",
+        "/major-order-status",
+        "/forecast-24h",
+        "/top-planets",
+        "/forecast-vs-actual",
+        "/total-players"
+    ]
+    
+    path = request.url.path
+
+    api_key = request.headers.get("X-API-Key")
+
+    valid_keys = [
+        API_KEY,
+        DEMO_API_KEY
+    ]
+
+    is_protected = path in protected_paths
+    is_valid_key = api_key in valid_keys
     # =========================
     # CHECK BLOCK
     # =========================
@@ -378,7 +402,33 @@ async def log_requests(request: Request, call_next):
         else:
             del BLOCKED_IPS[client_ip]
             FAILED_ATTEMPTS[client_ip] = 0
-        
+    
+    
+        # =========================
+    # EARLY AUTH REJECTION
+    # =========================
+    if is_protected and not is_valid_key:
+
+        FAILED_ATTEMPTS[client_ip] += 1
+
+        print(f"FAILED LOGIN: {client_ip}")
+        print(f"ATTEMPTS: {FAILED_ATTEMPTS[client_ip]}")
+
+        if FAILED_ATTEMPTS[client_ip] >= MAX_FAILED_ATTEMPTS:
+
+            BLOCKED_IPS[client_ip] = (
+                time.time() + BLOCK_DURATION_SECONDS
+            )
+
+            print(f"BLOCKED IP: {client_ip}")
+
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": "Invalid API Key"
+            }
+        )
+    
     response = await call_next(request)
 
     try:
@@ -450,33 +500,33 @@ async def log_requests(request: Request, call_next):
         # FAILED AUTH TRACKING
         # =========================
         # if user_type == "anonymous":
-        protected_paths = [
-            "/health",
-            "/predict-live",
-            "/major-order-status",
-            "/forecast-24h",
-            "/top-planets",
-            "/forecast-vs-actual",
-            "/total-players"
-        ]
+        # protected_paths = [
+        #     "/health",
+        #     "/predict-live",
+        #     "/major-order-status",
+        #     "/forecast-24h",
+        #     "/top-planets",
+        #     "/forecast-vs-actual",
+        #     "/total-players"
+        # ]
 
-        if (
-            user_type == "anonymous"
-            and path in protected_paths
-        ):
+        # if (
+        #     user_type == "anonymous"
+        #     and path in protected_paths
+        # ):
 
-            FAILED_ATTEMPTS[client_ip] += 1
+            # FAILED_ATTEMPTS[client_ip] += 1
 
-            print(f"FAILED LOGIN: {client_ip}")
-            print(f"ATTEMPTS: {FAILED_ATTEMPTS[client_ip]}")
+            # print(f"FAILED LOGIN: {client_ip}")
+            # print(f"ATTEMPTS: {FAILED_ATTEMPTS[client_ip]}")
 
-            if FAILED_ATTEMPTS[client_ip] >= MAX_FAILED_ATTEMPTS:
+            # if FAILED_ATTEMPTS[client_ip] >= MAX_FAILED_ATTEMPTS:
 
-                BLOCKED_IPS[client_ip] = (
-                    time.time() + BLOCK_DURATION_SECONDS
-                )
+            #     BLOCKED_IPS[client_ip] = (
+            #         time.time() + BLOCK_DURATION_SECONDS
+            #     )
 
-                print(f"BLOCKED IP: {client_ip}")
+            #     print(f"BLOCKED IP: {client_ip}")
 
         # else:
         #     FAILED_ATTEMPTS[client_ip] = 0
