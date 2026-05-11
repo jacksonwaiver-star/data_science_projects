@@ -355,7 +355,7 @@ async def log_requests(request: Request, call_next):
         path = request.url.path
         #was logging badly in database with only a / so changed it to home for better analytics
         if path == "/":
-            path = "home"
+            path = "/home"
         ignored_paths = [
         "/docs",
         "/openapi.json",
