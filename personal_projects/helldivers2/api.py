@@ -370,7 +370,8 @@ async def log_requests(request: Request, call_next):
         "/forecast-24h",
         "/top-planets",
         "/forecast-vs-actual",
-        "/total-players"
+        "/total-players",
+        "/faction-summary"
     ]
     
     path = request.url.path
