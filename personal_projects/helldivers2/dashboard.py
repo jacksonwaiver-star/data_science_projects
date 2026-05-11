@@ -605,7 +605,7 @@ try:
     forecast = get_forecast()
 except Exception as e:
     st.error(f"Forecast endpoint failed: {e}")
-    st.stop()
+    forecast = {}
 
 st.header("24 Hour Forecast")
 
