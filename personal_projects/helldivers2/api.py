@@ -240,8 +240,7 @@ FEATURES = [
 # ROOT
 # =========================
 @app.get("/")
-def home(
-    user_type: str = Security(verify_api_key)):
+def home():
     return {"message": "Helldivers Player Prediction API is running"}
 
 
