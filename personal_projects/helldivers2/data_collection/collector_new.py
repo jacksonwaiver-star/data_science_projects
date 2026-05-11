@@ -740,6 +740,17 @@ def apply_manual_edges(G: nx.Graph, name_to_index: dict[str, int]) -> int:
     add_edge_by_name(G,"Big Rock", "OVERGOE PRIME", name_to_index)
     add_edge_by_name(G,"Big Rock", "PEACOCK", name_to_index)
 
+    #connect everything to Zygos, ZYGOS
+    add_edge_by_name(G,"ZYGOS", "CIRRUS", name_to_index)
+    add_edge_by_name(G,"ZYGOS", "VELD", name_to_index)
+    add_edge_by_name(G,"ZYGOS", "FORT UNION", name_to_index)
+    
+    #connect everything to Fronteria, FRONTERIA
+    add_edge_by_name(G,"FRONTERIA", "FENRIR III", name_to_index)
+    add_edge_by_name(G,"FRONTERIA", "TURING", name_to_index)
+    add_edge_by_name(G,"FRONTERIA", "HEETH", name_to_index)
+    add_edge_by_name(G,"FRONTERIA", "CRIMSICA", name_to_index)
+    
     return skipped_edges
 
 
