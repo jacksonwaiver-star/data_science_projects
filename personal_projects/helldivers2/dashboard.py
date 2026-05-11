@@ -396,6 +396,8 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
+import requests
+import uuid
 
 # =====================================
 # CONFIG
@@ -409,6 +411,34 @@ HEADERS = {
     "X-API-Key": API_KEY
 }
 
+API_BASE_URL = "https://datascienceprojects-production.up.railway.app"
+
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+def track_event(event_type, element):
+
+    payload = {
+        "session_id": st.session_state.session_id,
+        "event_type": event_type,
+        "element": element
+    }
+
+    try:
+        requests.post(
+            f"{API_BASE_URL}/track-event",
+            json=payload,
+            timeout=5
+        )
+
+    except Exception as e:
+        print(f"Tracking failed: {e}")
+
+
+track_event(
+    event_type="impression",
+    element="dashboard_loaded"
+)
 st.set_page_config(
     page_title="Helldivers Analytics Dashboard",
     layout="wide"
