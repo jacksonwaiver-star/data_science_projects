@@ -35,6 +35,10 @@
 
 
 
+from sys import path
+
+from urllib import response
+
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
@@ -129,18 +133,18 @@ api_key_header = APIKeyHeader(
 
 def verify_api_key(api_key: str = Security(api_key_header)):
 
-    valid_keys = [
-        API_KEY,
-        DEMO_API_KEY
-    ]
+    key_map = {
+        API_KEY: "owner",
+        DEMO_API_KEY: "recruiter"
+    }
 
-    if api_key not in valid_keys:
+    if api_key not in key_map:
         raise HTTPException(
             status_code=403,
             detail="Invalid API Key"
         )
 
-    return api_key
+    return key_map[api_key]
 
 # =========================
 # LOAD MODEL
@@ -185,7 +189,8 @@ FEATURES = [
 # ROOT
 # =========================
 @app.get("/")
-def home():
+def home(
+    user_type: str = Security(verify_api_key)):
     return {"message": "Helldivers Player Prediction API is running"}
 
 
@@ -299,13 +304,33 @@ async def log_requests(request: Request, call_next):
 
     try:
 
-        session_id = request.headers.get(
-            "X-Session-ID",
-            "unknown"
-        )
+        # session_id = request.headers.get(
+        #     "X-Session-ID",
+        #     "unknown"
+        # )
+        api_key = request.headers.get("X-API-Key")
+
+        if api_key == API_KEY:
+            session_id = "owner"
+
+        elif api_key == DEMO_API_KEY:
+            session_id = "recruiter"
+
+        else:
+            session_id = "unknown"
 
         path = request.url.path
+        
+        ignored_paths = [
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/favicon.ico"
+        ]
 
+        if path in ignored_paths:
+            return response
+        
         with engine.begin() as conn:
             conn.execute(text("""
                 INSERT INTO user_events (
@@ -350,7 +375,8 @@ def fetch_recent_data(limit=500):
 
 @app.get("/health")
 @limiter.limit("5/minute")
-def health( request: Request):
+def health( request: Request,
+    user_type: str = Security(verify_api_key)):
 
     # -------------------------
     # MODEL STATUS
@@ -395,7 +421,7 @@ def health( request: Request):
 
 @app.get("/predict-live")
 @limiter.limit("2/minute")
-def predict_live( request: Request, api_key: str = Security(verify_api_key)):
+def predict_live( request: Request, user_type: str = Security(verify_api_key)):
 
     df = fetch_recent_data(limit=600)
 
@@ -519,7 +545,7 @@ def predict_live( request: Request, api_key: str = Security(verify_api_key)):
 
 @app.get("/major-order-status")
 @limiter.limit("3/minute")
-def major_order_status( request: Request):
+def major_order_status( request: Request, user_type: str = Security(verify_api_key)):
 
     if "major_order_status" in major_order_cache:
         return major_order_cache["major_order_status"]
@@ -657,7 +683,8 @@ def major_order_status( request: Request):
     
 @app.get("/major-order-history-by-day")
 @limiter.limit("3/minute")
-def major_order_history_by_day( request: Request, days_ago: int = 5):
+def major_order_history_by_day( request: Request, days_ago: int = 5,
+    user_type: str = Security(verify_api_key)):
     
     
     days_ago = min(max(days_ago, 1), 30)
@@ -776,7 +803,7 @@ def major_order_history_by_day( request: Request, days_ago: int = 5):
     
 @app.get("/forecast-24h")
 @limiter.limit("2/minute")
-def forecast_24h( request: Request,api_key: str = Security(verify_api_key)):
+def forecast_24h( request: Request, user_type: str = Security(verify_api_key)):
     
     if "forecast_24h" in forecast_cache:
         return forecast_cache["forecast_24h"]
@@ -889,7 +916,8 @@ def forecast_24h( request: Request,api_key: str = Security(verify_api_key)):
     
 @app.get("/top-planets")
 @limiter.limit("3/minute")
-def top_planets( request: Request,limit: int = 10):
+def top_planets( request: Request,limit: int = 10,
+    user_type: str = Security(verify_api_key)):
     limit = min(max(limit, 1), 50)
     cache_key = f"top_planets_{limit}"
 
@@ -959,7 +987,7 @@ def top_planets( request: Request,limit: int = 10):
 
 @app.get("/faction-summary")
 @limiter.limit("30/minute")
-def faction_summary( request: Request,):
+def faction_summary( request: Request, user_type: str = Security(verify_api_key)):
     #check the cache before hitting the database
     if "faction_summary" in summary_cache:
         return summary_cache["faction_summary"]
@@ -1056,7 +1084,7 @@ def faction_summary( request: Request,):
     
 @app.get("/forecast-vs-actual")
 @limiter.limit("2/minute")
-def forecast_vs_actual( request: Request, history_hours: int = 24, api_key: str = Security(verify_api_key)):
+def forecast_vs_actual( request: Request, history_hours: int = 24, user_type: str = Security(verify_api_key)):
     cache_key = f"forecast_vs_actual_{history_hours}"
 
     if cache_key in forecast_vs_actual_cache:
@@ -1172,7 +1200,8 @@ def forecast_vs_actual( request: Request, history_hours: int = 24, api_key: str 
     
 @app.get("/total-players")
 @limiter.limit("5/minute")
-def total_players( request: Request,):
+def total_players( request: Request,
+    user_type: str = Security(verify_api_key)):
 
     if "total_players" in total_players_cache:
         return total_players_cache["total_players"]
