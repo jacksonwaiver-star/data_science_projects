@@ -349,10 +349,10 @@ async def log_requests(request: Request, call_next):
         # =========================
         # SESSION ID
         # =========================
-        session_id = request.headers.get(
-            "X-Session-ID",
-            "unknown_session"
-        )
+        session_id = request.headers.get("X-Session-ID")
+
+        if not session_id:
+            session_id = str(request.client.host)
 
         # =========================
         # API KEY
