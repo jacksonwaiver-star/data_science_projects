@@ -357,7 +357,8 @@ async def log_requests(request: Request, call_next):
         if path == "/":
             path = "/home"
         ignored_paths = [
-        "/favicon.ico"
+            "/openapi.json",
+            "/favicon.ico"
         ]
 
         if path in ignored_paths:
