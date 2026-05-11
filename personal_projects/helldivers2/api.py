@@ -49,11 +49,40 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from cachetools import TTLCache
+from pydantic import BaseModel
 
 class DataPoint(BaseModel):
     timestamp: str
     total_players: float
 app = FastAPI()
+
+class UserEvent(BaseModel):
+    session_id: str
+    event_type: str
+    element: str
+    
+@app.post("/track-event")
+def track_event(event: UserEvent):
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO user_events (
+                session_id,
+                event_type,
+                element
+            )
+            VALUES (
+                :session_id,
+                :event_type,
+                :element
+            )
+        """), {
+            "session_id": event.session_id,
+            "event_type": event.event_type,
+            "element": event.element
+        })
+
+    return {"status": "success"}
 
 summary_cache = TTLCache(maxsize=100, ttl=300)
 
