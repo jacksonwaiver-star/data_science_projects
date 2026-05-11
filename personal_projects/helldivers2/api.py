@@ -106,7 +106,16 @@ def track_event(
     event: UserEvent,
     user_type: str = Security(verify_api_key)
 ):
+    status_code = response.status_code
 
+    if status_code == 403:
+        event_type = "unauthorized"
+
+    elif status_code == 429:
+        event_type = "rate_limited"
+
+    else:
+        event_type = "api_call"
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO user_events (
@@ -363,7 +372,17 @@ async def log_requests(request: Request, call_next):
 
         if path in ignored_paths:
             return response
-        
+        status_code = response.status_code
+
+        if status_code == 403:
+            event_type = "unauthorized"
+
+        elif status_code == 429:
+            event_type = "rate_limited"
+
+        else:
+            event_type = "api_call"
+            
         with engine.begin() as conn:
             conn.execute(text("""
                 INSERT INTO user_events (
@@ -378,7 +397,7 @@ async def log_requests(request: Request, call_next):
                 )
             """), {
                 "session_id": session_id,
-                "event_type": "api_call",
+                "event_type": event_type,
                 "element": path
             })
 
