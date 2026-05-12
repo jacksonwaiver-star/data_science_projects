@@ -66,6 +66,76 @@ class DataPoint(BaseModel):
     total_players: float
 #app = FastAPI()
 
+
+
+tags_metadata = [
+
+    {
+        "name": "System",
+        "description": (
+            "Health monitoring, deployment status, "
+            "database connectivity, and API diagnostics."
+        )
+    },
+
+    {
+        "name": "Forecasting",
+        "description": (
+            "Machine learning forecasting endpoints using "
+            "time-series feature engineering and XGBoost models."
+        )
+    },
+
+    {
+        "name": "Major Orders",
+        "description": (
+            "Endpoints related to Major Order participation, "
+            "historical analytics, and engagement metrics."
+        )
+    },
+
+    {
+        "name": "Planets",
+        "description": (
+            "Planet-level analytics including active player counts, "
+            "ownership, and strategic indicators."
+        )
+    },
+
+    {
+        "name": "Factions",
+        "description": (
+            "Faction engagement summaries and player distribution "
+            "across enemy types."
+        )
+    },
+
+    {
+        "name": "Analytics",
+        "description": (
+            "General analytics, comparisons, tracking, and "
+            "dashboard-related metrics."
+        )
+    }
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app = FastAPI(
     title="Helldivers 2 Analytics API",
 
@@ -98,7 +168,8 @@ Built with:
 - PostgreSQL
 - XGBoost
 - Railway
-"""
+""",
+    openapi_tags=tags_metadata
 )
 
 
@@ -614,7 +685,7 @@ def fetch_recent_data(limit=500):
 
     return df
 
-@app.get("/health", summary="API Health Check",
+@app.get("/health", tags=["System"], summary="API Health Check",
 
     description="""
 Returns current API health information including:
@@ -672,6 +743,8 @@ def health( request: Request,
 
 
 @app.get("/predict-live",
+         
+    tags=["Forecasting"],
 
     summary="Live Player Forecast Prediction",
 
@@ -833,7 +906,7 @@ def predict_live( request: Request, user_type: str = Security(verify_api_key)):
 #         "major_order_ratio": round(mo_ratio, 3)
 #     }
 
-@app.get("/major-order-status", summary="Current Major Order Analytics",
+@app.get("/major-order-status",tags=["Major Orders"], summary="Current Major Order Analytics",
 
     description="""
 Returns real-time Major Order participation metrics.
@@ -983,7 +1056,7 @@ def major_order_status( request: Request, user_type: str = Security(verify_api_k
     return result
 
     
-@app.get("/major-order-history-by-day")
+@app.get("/major-order-history-by-day", tags=["Major Orders"], summary="Major Order History by Day")
 @limiter.limit("3/minute")
 def major_order_history_by_day( request: Request, days_ago: int = 5,
     user_type: str = Security(verify_api_key)):
@@ -1104,6 +1177,8 @@ def major_order_history_by_day( request: Request, days_ago: int = 5,
     
     
 @app.get("/forecast-24h",
+         
+    tags=["Forecasting"],
 
     summary="24-Hour Player Forecast",
 
@@ -1238,6 +1313,8 @@ def forecast_24h( request: Request, user_type: str = Security(verify_api_key)):
     
     
 @app.get("/top-planets",
+         
+     tags=["Planets"],
 
     summary="Top Active Planets",
 
@@ -1321,6 +1398,8 @@ def top_planets( request: Request,limit: int = 10,
     return result
 
 @app.get("/faction-summary",
+         
+     tags=["Factions"],
 
     summary="Current Faction Engagement",
 
@@ -1429,6 +1508,8 @@ def faction_summary( request: Request, user_type: str = Security(verify_api_key)
     
     
 @app.get("/forecast-vs-actual",
+         
+    tags=["Forecasting"],
 
     summary="Forecast vs Actual Comparison",
 
