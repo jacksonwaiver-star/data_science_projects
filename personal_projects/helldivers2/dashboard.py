@@ -741,7 +741,7 @@ if "major_order_history" in history:
     fig_diff = px.bar(
         hist_df,
         x="timestamp",
-        y="Player Difference",
+        y="difference",
         title="Major Order Player Advantage",
         template="plotly_dark"
     )
