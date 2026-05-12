@@ -446,6 +446,20 @@ st.set_page_config(
     page_title="Helldivers Analytics Dashboard",
     layout="wide"
 )
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+div[data-testid="metric-container"] {
+    background-color: #111827;
+    padding: 15px;
+    border-radius: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 #st.autorefresh(interval=300000, key="refresh")
 
@@ -455,6 +469,15 @@ st.caption(
     "Live Helldivers 2 analytics platform with forecasting, "
     "major order tracking, and real-time faction engagement metrics."
 )
+
+st.markdown("""
+This project collects live Helldivers 2 API data,
+stores historical snapshots in PostgreSQL,
+serves analytics through FastAPI,
+and visualizes player behavior trends in Streamlit.
+""")
+
+st.divider()
 
 # =====================================
 # CACHED API HELPERS
@@ -548,6 +571,9 @@ except Exception as e:
     st.error(f"Health endpoint failed: {e}")
     st.stop()
 
+st.caption(
+    "Infrastructure status for the live analytics platform."
+)
 st.header("Server Health")
 
 col1, col2, col3 = st.columns(3)
@@ -558,7 +584,7 @@ col3.metric("Model Loaded", health["model_loaded"])
 
 st.write("Latest Data Timestamp:")
 st.write(health["latest_data_timestamp"])
-
+st.divider()
 # =====================================
 # MAJOR ORDER STATUS
 # =====================================
@@ -568,7 +594,9 @@ try:
 except Exception as e:
     st.error(f"Major order endpoint failed: {e}")
     st.stop()
-
+st.caption(
+    "Real-time snapshot of current major order engagement."
+)
 st.header("Current Major Order")
 
 st.subheader("Server Health")
@@ -582,12 +610,12 @@ mo_data = mo["major_order_data"]
 col1, col2, col3 = st.columns(3)
 
 col1.metric(
-    "Players In MO",
+    "Players On Major Order Planets",
     f"{mo_data['players_in_major_order']:,}"
 )
 
 col2.metric(
-    "Players Outside MO",
+    "Players Outside Major Order Planets",
     f"{mo_data['players_outside_major_order']:,}"
 )
 
@@ -599,7 +627,7 @@ col3.metric(
 st.subheader("Major Order Dispatch")
 
 st.info(mo_data["major_order_dispatch"])
-
+st.divider()
 # =====================================
 # FORECAST
 # =====================================
@@ -609,7 +637,9 @@ try:
 except Exception as e:
     st.error(f"Forecast endpoint failed: {e}")
     forecast = {}
-
+st.caption(
+    "Machine learning forecast of total active Helldivers players over the next 24 hours."
+)
 st.header("24 Hour Forecast")
 
 if "forecast" in forecast:
@@ -631,11 +661,14 @@ if "forecast" in forecast:
 
 else:
     st.error(forecast)
-
+    
+st.divider()
 # =====================================
 # HISTORICAL MAJOR ORDER
 # =====================================
-
+st.caption(
+    "Historical trends showing how player participation changes during major orders."
+)
 st.header("Historical Major Order Analytics")
 
 days_ago = st.slider(
@@ -708,7 +741,7 @@ if "major_order_history" in history:
     fig_diff = px.bar(
         hist_df,
         x="timestamp",
-        y="difference",
+        y="Player Difference",
         title="Major Order Player Advantage",
         template="plotly_dark"
     )
@@ -757,8 +790,15 @@ if "major_order_history" in history:
     )
 
     st.subheader(
-        "Major Order Participation Percentage historical from slider above"
+        "Historical Major Order Participation Snapshot"
     )
+
+    st.caption(
+        "Metrics below reflect the most recent timestamp from the selected historical window."
+    )
+    # st.subheader(
+    #     "Major Order Participation Percentage historical from slider above"
+    # )
 
     col1, col2, col3, col4 = st.columns(4)
     
@@ -766,7 +806,7 @@ if "major_order_history" in history:
         "Snapshot from the latest available game data."
     )
     col1.metric(
-        "Players In MO",
+        "Players On Major Order Planets",
         f"{int(players_in):,}"
     )
 
@@ -800,7 +840,9 @@ if "major_order_history" in history:
     peak_idx = hist_df["players_in_major_order"].idxmax()
 
     peak_row = hist_df.loc[peak_idx]
-
+    st.caption(
+        "Highest recorded player participation within the selected historical window."
+    )
     st.subheader("Peak Engagement")
 
     col1, col2 = st.columns(2)
@@ -811,7 +853,7 @@ if "major_order_history" in history:
     )
 
     col2.metric(
-        "Peak MO %",
+        "Highest Major Order Participation %",
         f"{peak_row['mo_ratio_percent']:.1f}%"
     )
 
@@ -820,7 +862,8 @@ if "major_order_history" in history:
 
 else:
     st.error(history)
-
+    
+st.divider()
 # =====================================
 # FACTION SUMMARY
 # =====================================
@@ -830,7 +873,9 @@ try:
 except Exception as e:
     st.error(f"Faction endpoint failed: {e}")
     st.stop()
-
+st.caption(
+    "Distribution of active players currently fighting each enemy faction."
+)
 st.header("Current Faction Player Distribution")
 
 st.caption(
@@ -886,6 +931,9 @@ except Exception as e:
     st.error(f"Top planets endpoint failed: {e}")
     st.stop()
 
+st.caption(
+    "Most populated planets from the latest live data snapshot."
+)
 st.header("Top Active Planets")
 
 if top_planets["server_health"]["status"] != "ok":
@@ -937,3 +985,12 @@ st.plotly_chart(
     fig_top,
     use_container_width=True
 )
+
+st.divider()
+
+st.caption("""
+Built with:
+FastAPI • PostgreSQL • Streamlit • Railway • XGBoost
+
+Data collected hourly from public Helldivers 2 APIs.
+""")
