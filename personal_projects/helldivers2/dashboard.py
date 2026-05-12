@@ -731,7 +731,7 @@ if "major_order_history" in history:
         hist_df,
         x="timestamp",
         y="mo_ratio_percent",
-        title="Major Order Participation Percentage",
+        title="Major Order Participation Percentage historical from slider above",
         template="plotly_dark"
     )
 
@@ -744,22 +744,16 @@ if "major_order_history" in history:
     # KPI METRICS
     # =====================================
 
-# =====================================
-# CURRENT LIVE MO PARTICIPATION
-# =====================================
+    latest = hist_df.iloc[-1]
 
-    current_players_in = mo_data["players_in_major_order"]
+    players_in = latest["players_in_major_order"]
+    players_out = latest["players_outside_major_order"]
 
-    current_players_out = mo_data["players_outside_major_order"]
+    total_players = players_in + players_out
 
-    current_total_players = (
-        current_players_in
-        + current_players_out
-    )
-
-    current_mo_share = (
-        (current_players_in / current_total_players) * 100
-        if current_total_players > 0 else 0
+    mo_share = (
+        (players_in / total_players) * 100
+        if total_players > 0 else 0
     )
 
     st.subheader(
@@ -773,22 +767,22 @@ if "major_order_history" in history:
     )
     col1.metric(
         "Players In MO",
-        f"{int(current_players_in):,}"
+        f"{int(players_in):,}"
     )
 
     col2.metric(
         "Players Outside MO",
-        f"{int(current_players_out):,}"
+        f"{int(players_out):,}"
     )
 
     col3.metric(
         "Total Active Players",
-        f"{int(current_total_players):,}"
+        f"{int(total_players):,}"
     )
 
     col4.metric(
         "Share Participating In MO",
-        f"{current_mo_share:.1f}%"
+        f"{mo_share:.1f}%"
     )
 
     # =====================================
