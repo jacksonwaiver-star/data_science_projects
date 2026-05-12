@@ -671,7 +671,45 @@ def health( request: Request,
     }
 
 
-@app.get("/predict-live")
+@app.get("/predict-live",
+
+    summary="Live Player Forecast Prediction",
+
+    description="""
+Generates a live forecast for upcoming Helldivers 2 player activity
+using the latest available telemetry data.
+
+This endpoint performs real-time feature engineering using:
+- lag variables
+- rolling statistics
+- cyclical hour encoding
+- Major Order participation metrics
+- combat activity indicators
+
+The prediction pipeline uses an XGBoost time-series forecasting model
+trained on historical player engagement data stored in PostgreSQL.
+
+Features:
+- real-time inference
+- quality threshold validation
+- automatic stale-data detection
+- latest timestamp monitoring
+
+Use Cases:
+- live engagement forecasting
+- event impact monitoring
+- player trend analysis
+- dashboard integration
+- model validation
+
+Returns:
+- predicted player counts
+- forecast timestamps
+- latest data timestamp
+- server health information
+- data quality indicators
+"""
+)
 @limiter.limit("2/minute")
 def predict_live( request: Request, user_type: str = Security(verify_api_key)):
 
