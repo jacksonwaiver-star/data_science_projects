@@ -103,6 +103,7 @@ API_BASE = "https://datascienceprojects-production.up.railway.app"
 
 API_KEY = os.getenv("DEMO_API_KEY")
 st.write(API_KEY)
+st.write(repr(API_KEY))
 HEADERS = {
     "X-API-Key": API_KEY,
     "X-Client-Type": "streamlit_dashboard"
