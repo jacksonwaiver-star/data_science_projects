@@ -405,7 +405,10 @@ import uuid
 
 API_BASE = "https://datascienceprojects-production.up.railway.app"
 
-API_KEY = st.secrets["API_KEY"]
+#API_KEY = st.secrets["API_KEY"]
+import os
+
+API_KEY = os.getenv("API_KEY")
 
 HEADERS = {
     "X-API-Key": API_KEY
