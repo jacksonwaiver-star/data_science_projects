@@ -64,7 +64,43 @@ import time
 class DataPoint(BaseModel):
     timestamp: str
     total_players: float
-app = FastAPI()
+#app = FastAPI()
+
+app = FastAPI(
+    title="Helldivers 2 Analytics API",
+
+    description="""
+## Recruiter Demo Access
+
+If you are a recruiter or reviewer:
+
+1. Open the **Authorize** button in the top right.
+2. Paste the demo API key provided in my resume.
+3. You can then test protected endpoints directly in Swagger UI.
+
+### What This API Includes
+- Real-time Helldivers 2 analytics
+- Major Order tracking
+- Player forecasting
+- Faction engagement metrics
+- Historical analytics
+- Rate limiting + API key security
+- Railway deployment + PostgreSQL backend
+
+### Example Endpoints
+- `/health`
+- `/major-order-status`
+- `/forecast-24h`
+- `/top-planets`
+
+Built with:
+- FastAPI
+- PostgreSQL
+- XGBoost
+- Streamlit
+- Railway
+"""
+)
 
 
 
