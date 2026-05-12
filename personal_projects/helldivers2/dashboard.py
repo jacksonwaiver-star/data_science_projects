@@ -592,8 +592,8 @@ col2.metric(
 )
 
 col3.metric(
-    "MO Ratio",
-    mo_data["major_order_ratio"]
+    "MO Participation %",
+    f"{mo_data['major_order_ratio']:.1%}"
 )
 
 st.subheader("Major Order Dispatch")
@@ -749,17 +749,22 @@ if "major_order_history" in history:
     players_in = latest["players_in_major_order"]
     players_out = latest["players_outside_major_order"]
 
-    difference = players_in - players_out
+    total_players = players_in + players_out
 
-    pct_more = (
-        ((players_in - players_out) / players_out) * 100
-        if players_out > 0 else 0
+    mo_share = (
+        (players_in / total_players) * 100
+        if total_players > 0 else 0
     )
 
-    st.subheader("Current Major Order Engagement")
+    st.subheader(
+        "Current Major Order Participation"
+    )
 
     col1, col2, col3, col4 = st.columns(4)
-
+    
+    st.caption(
+        "Snapshot from the latest available game data."
+    )
     col1.metric(
         "Players In MO",
         f"{int(players_in):,}"
@@ -771,13 +776,13 @@ if "major_order_history" in history:
     )
 
     col3.metric(
-        "Difference",
-        f"{int(difference):,}"
+        "Total Active Players",
+        f"{int(total_players):,}"
     )
 
     col4.metric(
-        "% More In MO",
-        f"{pct_more:.1f}%"
+        "Share Participating In MO",
+        f"{mo_share:.1f}%"
     )
 
     # =====================================
