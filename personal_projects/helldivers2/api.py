@@ -605,11 +605,11 @@ async def log_requests(request: Request, call_next):
         elif path == "/docs":
             event_type = "swagger_open"
 
-        elif (
-            path == "/track-event"
-            and client_type == "streamlit_dashboard"
-        ):
-            event_type = "streamlit_dashboard_opened"
+        # elif (
+        #     path == "/track-event"
+        #     and client_type == "streamlit_dashboard"
+        # ):
+        #     event_type = "streamlit_dashboard_opened"
 
         else:
             event_type = "api_call"
@@ -651,10 +651,9 @@ async def log_requests(request: Request, call_next):
 
         #CHANGE LOGGING FOR STREAMLIT DASHBOARD
         # Ignore internal Streamlit dashboard API calls
-        if (
-            client_type == "streamlit_dashboard"
-            and path != "/track-event"
-        ):
+        # Ignore ALL Streamlit dashboard requests
+        # Tracking is handled manually in /track-event
+        if client_type == "streamlit_dashboard":
             return response
         
         # =========================
