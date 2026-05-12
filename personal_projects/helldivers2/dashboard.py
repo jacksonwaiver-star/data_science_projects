@@ -101,7 +101,7 @@ SESSION_ID = st.session_state.session_id
 
 API_BASE = "https://datascienceprojects-production.up.railway.app"
 
-API_KEY = os.getenv("DEMO_API_KEY")
+API_KEY = os.getenv("API_KEY")
 HEADERS = {
     "X-API-Key": API_KEY,
     "X-Client-Type": "streamlit_dashboard"
