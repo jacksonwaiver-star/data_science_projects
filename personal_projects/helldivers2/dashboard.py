@@ -398,17 +398,47 @@ import requests
 import plotly.express as px
 import uuid
 
-SESSION_ID = str(uuid.uuid4())
+recruiter_name = st.text_input(
+    "Recruiter Name (Optional)"
+)
+#SESSION_ID = str(uuid.uuid4())
+if recruiter_name.strip():
+
+    SESSION_ID = (
+        f"{recruiter_name}_{uuid.uuid4()}"
+    )
+
+else:
+
+    SESSION_ID = str(uuid.uuid4())
 
 API_BASE = "https://datascienceprojects-production.up.railway.app"
 
 #API_KEY = st.secrets["API_KEY"]
 import os
 
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("DEMO_API_KEY")
 
 
+if "session_id" not in st.session_state:
 
+    recruiter_name = st.text_input(
+        "Recruiter Name (Optional)"
+    )
+
+    if recruiter_name.strip():
+
+        st.session_state.session_id = (
+            f"{recruiter_name}_{uuid.uuid4()}"
+        )
+
+    else:
+
+        st.session_state.session_id = (
+            str(uuid.uuid4())
+        )
+
+SESSION_ID = st.session_state.session_id
 requests.post(
     f"{API_BASE}/track-event",
     headers={
