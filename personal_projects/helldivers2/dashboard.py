@@ -75,7 +75,7 @@ import os
 # =====================================
 
 recruiter_name = st.text_input(
-    "Recruiter Name (Optional)",
+    "Recruiter Name (Optional — helps identify your session)",
     key="recruiter_name_input"
 )
 
@@ -161,18 +161,37 @@ st.set_page_config(
     page_title="Helldivers Analytics Dashboard",
     layout="wide"
 )
+
 st.markdown("""
 <style>
+
+/* Main container spacing */
 .block-container {
     padding-top: 1rem;
     padding-bottom: 1rem;
 }
 
+/* Metric cards */
 div[data-testid="metric-container"] {
     background-color: #111827;
     padding: 15px;
     border-radius: 10px;
 }
+
+/* Recruiter input label */
+div[data-testid="stTextInput"] label {
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+/* Recruiter input box */
+div[data-testid="stTextInput"] input {
+    background-color: #111827 !important;
+    color: white !important;
+    border-radius: 8px !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
