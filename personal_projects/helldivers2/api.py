@@ -614,7 +614,18 @@ def fetch_recent_data(limit=500):
 
     return df
 
-@app.get("/health")
+@app.get("/health", summary="API Health Check",
+
+    description="""
+Returns current API health information including:
+- database connectivity
+- model loading status
+- latest available timestamp
+- possible data integrity warnings
+
+Useful for deployment monitoring and uptime validation.
+""")
+
 @limiter.limit("5/minute")
 def health( request: Request,
     user_type: str = Security(verify_api_key)):
@@ -784,7 +795,19 @@ def predict_live( request: Request, user_type: str = Security(verify_api_key)):
 #         "major_order_ratio": round(mo_ratio, 3)
 #     }
 
-@app.get("/major-order-status")
+@app.get("/major-order-status", summary="Current Major Order Analytics",
+
+    description="""
+Returns real-time Major Order participation metrics.
+
+Includes:
+- players participating in Major Orders
+- players outside Major Orders
+- Major Order ratio
+- current dispatch information
+
+Used by the Streamlit analytics dashboard.
+""")
 @limiter.limit("3/minute")
 def major_order_status( request: Request, user_type: str = Security(verify_api_key)):
 
@@ -1042,7 +1065,28 @@ def major_order_history_by_day( request: Request, days_ago: int = 5,
     return result
     
     
-@app.get("/forecast-24h")
+@app.get("/forecast-24h",
+
+    summary="24-Hour Player Forecast",
+
+    description="""
+Forecasts Helldivers 2 total player counts over the next 24 hours.
+
+This endpoint uses engineered time-series features including:
+- lag variables
+- rolling statistics
+- cyclic hour encoding
+- Major Order participation ratios
+
+Model:
+- XGBoost Regressor
+
+Use Cases:
+- engagement forecasting
+- event impact analysis
+- player trend monitoring
+"""
+)
 @limiter.limit("2/minute")
 def forecast_24h( request: Request, user_type: str = Security(verify_api_key)):
     
@@ -1155,7 +1199,19 @@ def forecast_24h( request: Request, user_type: str = Security(verify_api_key)):
     return result
     
     
-@app.get("/top-planets")
+@app.get("/top-planets",
+
+    summary="Top Active Planets",
+
+    description="""
+Returns the planets with the highest active player counts.
+
+Includes:
+- planet names
+- player totals
+- faction ownership
+- Major Order participation indicators
+""")
 @limiter.limit("3/minute")
 def top_planets( request: Request,limit: int = 10,
     user_type: str = Security(verify_api_key)):
@@ -1226,7 +1282,18 @@ def top_planets( request: Request,limit: int = 10,
 
     return result
 
-@app.get("/faction-summary")
+@app.get("/faction-summary",
+
+    summary="Current Faction Engagement",
+
+    description="""
+Summarizes current player distribution across enemy factions.
+
+Useful for understanding:
+- current war focus
+- faction popularity
+- real-time engagement shifts
+""")
 @limiter.limit("30/minute")
 def faction_summary( request: Request, user_type: str = Security(verify_api_key)):
     #check the cache before hitting the database
@@ -1323,7 +1390,18 @@ def faction_summary( request: Request, user_type: str = Security(verify_api_key)
     # }
     
     
-@app.get("/forecast-vs-actual")
+@app.get("/forecast-vs-actual",
+
+    summary="Forecast vs Actual Comparison",
+
+    description="""
+Compares model predictions against real observed player counts.
+
+Useful for:
+- model evaluation
+- forecast validation
+- identifying underfitting during major events
+""")
 @limiter.limit("2/minute")
 def forecast_vs_actual( request: Request, history_hours: int = 24, user_type: str = Security(verify_api_key)):
     cache_key = f"forecast_vs_actual_{history_hours}"
