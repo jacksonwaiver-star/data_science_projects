@@ -97,7 +97,6 @@ Built with:
 - FastAPI
 - PostgreSQL
 - XGBoost
-- Streamlit
 - Railway
 """
 )
