@@ -757,7 +757,7 @@ if "major_order_history" in history:
     )
 
     st.subheader(
-        "Current Major Order Participation"
+        "Major Order Participation Percentage historical from slider above"
     )
 
     col1, col2, col3, col4 = st.columns(4)
