@@ -261,9 +261,6 @@ major_order_history_cache = TTLCache(maxsize=50, ttl=300)
 FAILED_ATTEMPTS = defaultdict(int)
 
 BLOCKED_IPS = {}
-
-BLOCKED_IPS.pop("35.203.151.101", None)
-FAILED_ATTEMPTS["35.203.151.101"] = 0
 MAX_FAILED_ATTEMPTS = 5
 
 BLOCK_DURATION_SECONDS = 60 * 30
