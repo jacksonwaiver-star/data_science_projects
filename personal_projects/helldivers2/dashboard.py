@@ -780,10 +780,18 @@ if "major_order_history" in history:
         f"{int(total_players):,}"
     )
 
-    col4.metric(
-        "Share Participating In MO",
-        f"{mo_share:.1f}%"
+    percent_in_mo = (
+        latest["mo_ratio_percent"]
     )
+
+    col4.metric(
+        "% Of Players In Major Order",
+        f"{percent_in_mo:.1f}%"
+    )
+    # col4.metric(
+    #     "Share Participating In MO",
+    #     f"{mo_share:.1f}%"
+    # )
 
     # =====================================
     # PEAK ENGAGEMENT
