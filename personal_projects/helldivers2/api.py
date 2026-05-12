@@ -481,6 +481,11 @@ async def log_requests(request: Request, call_next):
     
     path = request.url.path
 
+    client_type = request.headers.get(
+        "X-Client-Type",
+        "normal"
+    )
+    
     api_key = request.headers.get("X-API-Key")
 
     valid_keys = [
@@ -600,6 +605,12 @@ async def log_requests(request: Request, call_next):
         elif path == "/docs":
             event_type = "swagger_open"
 
+        elif (
+            path == "/track-event"
+            and client_type == "streamlit_dashboard"
+        ):
+            event_type = "streamlit_dashboard_opened"
+
         else:
             event_type = "api_call"
             
@@ -638,6 +649,14 @@ async def log_requests(request: Request, call_next):
         # else:
         #     FAILED_ATTEMPTS[client_ip] = 0
 
+        #CHANGE LOGGING FOR STREAMLIT DASHBOARD
+        # Ignore internal Streamlit dashboard API calls
+        if (
+            client_type == "streamlit_dashboard"
+            and path != "/track-event"
+        ):
+            return response
+        
         # =========================
         # INSERT
         # =========================
