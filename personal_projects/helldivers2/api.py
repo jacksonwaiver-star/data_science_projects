@@ -1636,7 +1636,7 @@ def forecast_vs_actual( request: Request, history_hours: int = 24, user_type: st
 
     return result
     
-@app.get("/total-players")
+@app.get("/total-players", tags=["Analytics"], summary="Get Total Player Count")
 @limiter.limit("5/minute")
 def total_players( request: Request,
     user_type: str = Security(verify_api_key)):
