@@ -396,12 +396,9 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
-import requests
 import uuid
 
-# =====================================
-# CONFIG
-# =====================================
+SESSION_ID = str(uuid.uuid4())
 
 API_BASE = "https://datascienceprojects-production.up.railway.app"
 
@@ -410,8 +407,30 @@ import os
 
 API_KEY = os.getenv("API_KEY")
 
+
+
+requests.post(
+    f"{API_BASE}/track-event",
+    headers={
+        "X-API-Key": API_KEY,
+        "X-Client-Type": "streamlit_dashboard"
+    },
+    json={
+        "session_id": SESSION_ID,
+        "event_type": "streamlit_dashboard_opened",
+        "element": "dashboard_home"
+    }
+)
+
+# =====================================
+# CONFIG
+# =====================================
+
+
+
 HEADERS = {
-    "X-API-Key": API_KEY
+    "X-API-Key": API_KEY,
+    "X-Client-Type": "streamlit_dashboard"
 }
 
 API_BASE_URL = "https://datascienceprojects-production.up.railway.app"
