@@ -1017,7 +1017,7 @@ def recompute_major_order_flags(
             graph,
             owner_by_index,
             target,
-            max_depth=2
+            max_depth=3
         )
 
         
@@ -1052,7 +1052,7 @@ def get_paths_to_target_limited(
     while queue:
         current, path = queue.popleft()
 
-        if len(path) > max_depth:
+        if len(path) -1 > max_depth:
             continue
 
         for neighbor in graph.neighbors(current):
